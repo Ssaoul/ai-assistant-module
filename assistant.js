@@ -9,7 +9,7 @@
 
   // 글로벌 설정
   const CONFIG = {
-    TTS_ENDPOINT: '/api/tts',  // chat 시스템과 동일한 엔드포인트 사용
+    TTS_ENDPOINT: 'https://huray-chatbot-demo-e2sdzu7ra-1uk-9231s-projects.vercel.app/api/tts',  // chat 시스템 TTS 엔드포인트 사용
     VERSION: '1.0.0',
     SUPPORTED_LANGUAGES: ['ko-KR', 'en-US'],
     DEFAULT_VOICE: 'nova'
