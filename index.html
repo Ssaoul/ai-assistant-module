@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant Module - 시니어 친화 음성 어시스턴트</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .demo-section {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .voice-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .voice-button:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        .code-block {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 AI Assistant Module</h1>
+        <p><strong>시니어 친화형 음성 기반 웹 접근성 모듈</strong></p>
+        
+        <div class="demo-section">
+            <h2>🚀 라이브 데모</h2>
+            <button class="voice-button" onclick="startDemo()">🎤 음성 어시스턴트 시작</button>
+            <button class="voice-button" onclick="testSpeak()">🔊 음성 테스트</button>
+            <button class="voice-button" onclick="stopAssistant()">⏹️ 정지</button>
+            
+            <div id="status" style="margin-top: 15px; font-weight: bold;"></div>
+        </div>
+
+        <div class="demo-section">
+            <h2>📋 사용 가능한 명령어</h2>
+            <ul>
+                <li><strong>"다음 페이지"</strong> - 페이지 이동</li>
+                <li><strong>"위로 올려줘"</strong> - 스크롤 상단</li>
+                <li><strong>"아래로 내려줘"</strong> - 스크롤 하단</li>
+                <li><strong>"검색해줘"</strong> - 검색창 포커스</li>
+                <li><strong>"메뉴 열어줘"</strong> - 메뉴 버튼 클릭</li>
+            </ul>
+        </div>
+
+        <div class="demo-section">
+            <h2>💻 개발자 설치 방법</h2>
+            <div class="code-block">
+&lt;!-- CDN 방식 (권장) --&gt;<br>
+&lt;script src="https://ai-assistant-module.vercel.app/v1/assistant.js"&gt;&lt;/script&gt;<br>
+&lt;script&gt;<br>
+&nbsp;&nbsp;const assistant = AIAssistant.init({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;language: 'ko-KR',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;enableLogging: true<br>
+&nbsp;&nbsp;});<br>
+&lt;/script&gt;
+            </div>
+        </div>
+    </div>
+
+    <script src="./src/standalone/ai-assistant-standalone.js"></script>
+    <script>
+        let assistant = null;
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            const colors = {
+                info: '#2196F3',
+                success: '#4CAF50', 
+                error: '#F44336',
+                warning: '#FF9800'
+            };
+            status.style.color = colors[type];
+            status.textContent = message;
+        }
+        
+        function startDemo() {
+            try {
+                assistant = AIAssistant.init({
+                    language: 'ko-KR',
+                    enableLogging: true,
+                    autoStart: true
+                });
+                updateStatus('🎤 음성 어시스턴트가 시작되었습니다. 명령어를 말해보세요!', 'success');
+            } catch (error) {
+                updateStatus('❌ 시작 실패: ' + error.message, 'error');
+            }
+        }
+        
+        function testSpeak() {
+            if (assistant) {
+                assistant.say('안녕하세요! AI 어시스턴트입니다. 무엇을 도와드릴까요?');
+                updateStatus('🔊 음성 테스트 중...', 'info');
+            } else {
+                updateStatus('⚠️ 먼저 어시스턴트를 시작해주세요', 'warning');
+            }
+        }
+        
+        function stopAssistant() {
+            if (assistant) {
+                assistant.stop();
+                updateStatus('⏹️ 음성 어시스턴트가 중지되었습니다', 'info');
+            }
+        }
+        
+        // 페이지 로드시 안내
+        document.addEventListener('DOMContentLoaded', function() {
+            updateStatus('👆 위 버튼을 클릭해서 AI 어시스턴트를 체험해보세요!', 'info');
+        });
+    </script>
+</body>
+</html>
