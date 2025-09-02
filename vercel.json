@@ -3,22 +3,13 @@
   "routes": [
     {
       "src": "/v1/assistant.js",
-      "dest": "/src/standalone/ai-assistant-standalone.js",
+      "dest": "/public/assistant.js",
       "headers": {
         "Content-Type": "application/javascript",
         "Cache-Control": "public, max-age=31536000",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type"
-      }
-    },
-    {
-      "src": "/assistant.js", 
-      "dest": "/src/standalone/ai-assistant-standalone.js",
-      "headers": {
-        "Content-Type": "application/javascript",
-        "Cache-Control": "public, max-age=31536000",
-        "Access-Control-Allow-Origin": "*"
       }
     }
   ]
