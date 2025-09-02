@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant 기본 통합 예제</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .demo-section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 10px 20px; font-size: 16px; }
+        input { margin: 5px; padding: 8px; font-size: 14px; }
+        .status { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🎤 AI Assistant 모듈 데모</h1>
+    
+    <div class="status" id="status">
+        상태: 초기화 중...
+    </div>
+
+    <div class="demo-section">
+        <h2>기본 컨트롤</h2>
+        <button onclick="startListening()">🎤 음성 인식 시작</button>
+        <button onclick="stopListening()">⏹️ 음성 인식 중지</button>
+        <button onclick="testSpeak()">🔊 음성 테스트</button>
+        <button onclick="scanPage()">🔍 페이지 스캔</button>
+    </div>
+
+    <div class="demo-section">
+        <h2>테스트 요소들</h2>
+        <button id="test-btn-1">로그인</button>
+        <button id="test-btn-2">검색</button>
+        <button id="test-btn-3">메뉴</button>
+        <br>
+        <input type="text" placeholder="이름을 입력하세요" id="name-input">
+        <input type="tel" placeholder="전화번호를 입력하세요" id="phone-input">
+        <br>
+        <a href="#" onclick="alert('링크 클릭됨')">고객센터</a>
+        <a href="#" onclick="alert('링크 클릭됨')">마이페이지</a>
+    </div>
+
+    <div class="demo-section">
+        <h2>음성 명령어 안내</h2>
+        <ul>
+            <li>"로그인 클릭해줘" - 로그인 버튼 클릭</li>
+            <li>"검색 눌러줘" - 검색 버튼 클릭</li>
+            <li>"이름은 홍길동" - 이름 필드에 자동 입력</li>
+            <li>"위로" - 페이지 상단으로 스크롤</li>
+            <li>"아래로" - 페이지 하단으로 스크롤</li>
+        </ul>
+    </div>    <script src="../dist/ai-assistant.js"></script>
+    <script>
+        let assistant;
+
+        // AI Assistant 초기화
+        async function initializeAssistant() {
+            try {
+                assistant = new AIAssistant({
+                    apiKey: 'demo-key',
+                    language: 'ko-KR',
+                    voiceModel: 'nova',
+                    mode: 'senior-friendly',
+                    enableLogging: true,
+                    customCommands: [
+                        {
+                            keywords: ['데모', '테스트'],
+                            action: async () => alert('커스텀 명령어가 실행되었습니다!'),
+                            description: '데모 명령어',
+                            category: 'system'
+                        }
+                    ]
+                })
+
+                await assistant.initialize()
+                updateStatus('✅ AI Assistant 준비 완료')
+            } catch (error) {
+                updateStatus('❌ 초기화 실패: ' + error.message)
+            }
+        }
+
+        // 상태 업데이트
+        function updateStatus(message) {
+            document.getElementById('status').textContent = '상태: ' + message
+        }
+
+        // 컨트롤 함수들
+        async function startListening() {
+            try {
+                await assistant.startListening()
+                updateStatus('🎤 음성 인식 중...')
+            } catch (error) {
+                updateStatus('❌ 음성 인식 시작 실패')
+            }
+        }
+
+        function stopListening() {
+            assistant.stopListening()
+            updateStatus('⏹️ 음성 인식 중지됨')
+        }
+
+        async function testSpeak() {
+            await assistant.speak('안녕하세요! AI 어시스턴트 테스트 중입니다.')
+        }
+
+        async function scanPage() {
+            const elements = await assistant.scanPage()
+            console.log('스캔된 요소들:', elements)
+            updateStatus(`🔍 ${Object.values(elements).flat().length}개 요소 발견`)
+        }
+
+        // 페이지 로드 시 초기화
+        window.addEventListener('load', initializeAssistant)
+    </script>
+</body>
+</html>

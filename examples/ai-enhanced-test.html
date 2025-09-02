@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 의도 인식 테스트</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 20px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        .test-btn { margin: 8px; padding: 12px 20px; font-size: 16px; background: #2196F3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .pattern-test { background: #f0f8ff; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .confidence { font-weight: bold; color: #007700; }
+        .status { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧠 AI 의도 인식 테스트</h1>
+    
+    <div class="status" id="status">
+        ⏳ AI 모듈 초기화 중...
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 다양한 표현 테스트</h2>
+        
+        <div class="pattern-test">
+            <h3>로그인 의도 - 다양한 표현</h3>
+            <ul>
+                <li><strong>"로그인해줘"</strong> - 기본 표현</li>
+                <li><strong>"로그인"</strong> - 단순 표현</li>
+                <li><strong>"로그인해"</strong> - 축약 표현</li>
+                <li><strong>"로그인합니다"</strong> - 정중한 표현</li>
+                <li><strong>"먼저 로그인 할래"</strong> - 문장 표현</li>
+                <li><strong>"들어가자"</strong> - 의역 표현</li>
+                <li><strong>"접속하고 싶어"</strong> - 의도 표현</li>
+            </ul>
+        </div>
+
+        <div class="pattern-test">
+            <h3>검색 의도 - 다양한 표현</h3>
+            <ul>
+                <li><strong>"검색해줘"</strong></li>
+                <li><strong>"찾아줘"</strong></li>
+                <li><strong>"찾고 싶어"</strong></li>
+                <li><strong>"검색창 열어줘"</strong></li>
+                <li><strong>"뭔가 찾아보자"</strong></li>
+            </ul>
+        </div>
+
+        <div class="pattern-test">
+            <h3>확인 의도 - 다양한 표현</h3>
+            <ul>
+                <li><strong>"확인"</strong></li>
+                <li><strong>"클릭해"</strong></li>
+                <li><strong>"이걸로 해"</strong></li>
+                <li><strong>"선택할게"</strong></li>
+                <li><strong>"좋아"</strong></li>
+                <li><strong>"이거 눌러줘"</strong></li>
+            </ul>
+        </div>
+    </div>    <div class="test-section">
+        <h2>🧪 테스트 요소들</h2>
+        <button class="test-btn" onclick="alert('로그인 성공!')">로그인</button>
+        <button class="test-btn" onclick="alert('검색 실행!')">검색</button>
+        <button class="test-btn" onclick="alert('확인 완료!')">확인</button>
+        <button class="test-btn" onclick="goNext()">다음 단계</button>
+        <br><br>
+        <input type="search" placeholder="검색어를 입력하세요" style="padding: 10px; font-size: 14px;">
+        <input type="text" placeholder="이름을 입력하세요" style="padding: 10px; font-size: 14px;">
+    </div>
+
+    <div class="test-section">
+        <h2>📊 실시간 분석 결과</h2>
+        <div id="analysis-results"></div>
+    </div>
+
+    <script src="../src/standalone/ai-assistant-standalone.js"></script>
+    <script>
+        function goNext() {
+            alert('다음 단계로 이동됨');
+            addAnalysis('✅ 다음 단계 버튼 클릭됨 - "아니"라고 말하면 되돌아갑니다');
+        }
+
+        function addAnalysis(message) {
+            const results = document.getElementById('analysis-results');
+            const p = document.createElement('p');
+            p.innerHTML = `<small>${new Date().toLocaleTimeString()}</small> ${message}`;
+            results.appendChild(p);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        // AI Assistant 초기화 (OpenAI API 키 포함)
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const assistant = window.AIAssistant.init({
+                    language: 'ko-KR',
+                    voiceModel: 'nova',
+                    openaiApiKey: 'your-openai-api-key', // 실제 키 입력 필요
+                    useAIIntent: true,
+                    enableLogging: true,
+                    autoStart: true
+                });
+                
+                document.getElementById('status').innerHTML = 
+                    '✅ AI 의도 인식 모듈 활성화됨<br>' +
+                    '🎤 다양한 표현으로 음성 명령을 시도해보세요!<br>' +
+                    '🧠 AI가 의도를 분석하여 적절한 액션을 실행합니다';
+                
+                addAnalysis('🤖 AI 의도 분석 모듈 로드 완료');
+                addAnalysis('🎤 음성 인식 대기 중...');
+                
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ 초기화 실패: ' + error.message;
+                addAnalysis('❌ 모듈 초기화 실패: ' + error.message);
+            }
+        });
+    </script>
+</body>
+</html>

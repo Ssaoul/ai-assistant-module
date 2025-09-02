@@ -1,0 +1,58 @@
+{
+  "name": "@ai-assistant/module",
+  "version": "1.0.0",
+  "description": "시니어 친화형 AI 어시스턴트 모듈 - 웹/앱/키오스크 음성 접근성 지원",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && rollup -c",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "docs": "typedoc --out docs-generated src",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "accessibility",
+    "voice-assistant",
+    "senior-friendly",
+    "korean",
+    "tts",
+    "speech-recognition",
+    "dom-navigation"
+  ],
+  "author": "Huray Team",
+  "license": "MIT",
+  "files": [
+    "dist/",
+    "README.md",
+    "docs/"
+  ],
+  "dependencies": {
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "rollup": "^3.0.0",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "typedoc": "^0.25.0",
+    "typescript": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/huray-team/ai-assistant-module"
+  },
+  "bugs": {
+    "url": "https://github.com/huray-team/ai-assistant-module/issues"
+  },
+  "homepage": "https://github.com/huray-team/ai-assistant-module#readme"
+}
