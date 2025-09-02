@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "src/standalone/ai-assistant-standalone.js": {
-      "runtime": "@vercel/static"
-    }
-  },
   "routes": [
     {
       "src": "/v1/assistant.js",
@@ -17,7 +12,7 @@
       }
     },
     {
-      "src": "/v1/(.*)",
+      "src": "/assistant.js",
       "dest": "/src/standalone/ai-assistant-standalone.js",
       "headers": {
         "Content-Type": "application/javascript",
