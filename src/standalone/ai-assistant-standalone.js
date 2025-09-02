@@ -9,7 +9,7 @@
 
   // 글로벌 설정
   const CONFIG = {
-    TTS_ENDPOINT: 'https://api.ai-assistant.com/v1/tts',
+    TTS_ENDPOINT: '/api/tts',  // chat 시스템과 동일한 엔드포인트 사용
     VERSION: '1.0.0',
     SUPPORTED_LANGUAGES: ['ko-KR', 'en-US'],
     DEFAULT_VOICE: 'nova'
@@ -47,6 +47,10 @@
       this.recognition = null;
       this.isListening = false;
       this.isSpeaking = false;
+      this.isGeneratingTTS = false;
+      this.currentUtterance = null;
+      this.audioContext = null;
+      this.isAudioContextInitialized = false;
       this.actionHistory = [];
       this.lastCommand = '';
       this.lastCommandTime = 0;
@@ -304,58 +308,177 @@
       if (this.actionHistory.length > 10) {
         this.actionHistory.shift();
       }
-    }    // 클라우드 TTS 또는 브라우저 TTS
-    async speak(text) {
-      if (this.isSpeaking) return;
-
-      try {
-        // 클라우드 TTS 시도 (Nova 음성)
-        if (this.config.apiKey) {
-          await this.cloudTTS(text);
-        } else {
-          // 브라우저 내장 TTS 사용
-          this.browserTTS(text);
+    }    // AudioContext 초기화 (Safari 자동재생 정책 대응)
+    initializeAudioContext() {
+      if (!this.isAudioContextInitialized && typeof window !== 'undefined') {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) {
+            this.audioContext = new AudioContext();
+            this.isAudioContextInitialized = true;
+            console.log("🎵 AudioContext 초기화 완료");
+          }
+        } catch (error) {
+          console.warn("⚠️ AudioContext 초기화 실패:", error);
         }
-      } catch (error) {
-        this.browserTTS(text); // 폴백
       }
     }
 
-    async cloudTTS(text) {
-      const response = await fetch(CONFIG.TTS_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: this.enhanceKoreanText(text),
-          voice: this.config.voiceModel,
-          speed: 1.0
-        })
-      });
+    // 통합된 음성 출력 시스템 (chat VoiceManager와 동일한 로직)
+    async speak(text) {
+      // 기존 음성 출력 중지
+      if (this.currentUtterance) {
+        speechSynthesis.cancel();
+      }
 
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        
-        this.isSpeaking = true;
-        audio.onended = () => {
-          this.isSpeaking = false;
-          URL.revokeObjectURL(audioUrl);
-        };
-        
-        await audio.play();
+      if ("speechSynthesis" in window && !this.isSpeaking && !this.isGeneratingTTS) {
+        this.isGeneratingTTS = true;
+
+        try {
+          console.log(`🎯 Nova TTS 시도: "${text.substring(0, 50)}..." (${text.length}자)`);
+
+          const response = await fetch(CONFIG.TTS_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              text: text,
+              voice: "nova",
+              speed: 1.0,
+            }),
+          });
+
+          if (response.ok) {
+            const audioBlob = await response.blob();
+            
+            // 빈 오디오 파일 체크
+            if (audioBlob.size < 1000) {
+              console.warn("⚠️ Nova TTS 응답이 너무 작음, fallback 사용");
+              this.isGeneratingTTS = false;
+              this.fallbackToSpeechSynthesis(text);
+              return;
+            }
+            
+            console.log(`✅ Nova TTS 성공 (${audioBlob.size} bytes)`);
+            this.isGeneratingTTS = false;
+            this.isSpeaking = true;
+            
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            audio.volume = 0.9;
+            
+            // 자동재생 정책 우회를 위한 미리 로드
+            audio.preload = 'auto';
+            
+            audio.onended = () => {
+              this.isSpeaking = false;
+              URL.revokeObjectURL(audioUrl);
+              console.log("✅ Nova 음성 재생 완료");
+            };
+
+            audio.onerror = (event) => {
+              console.error("❌ Nova 오디오 재생 실패:", event);
+              this.isSpeaking = false;
+              URL.revokeObjectURL(audioUrl);
+              this.fallbackToSpeechSynthesis(text);
+            };
+            
+            // 자동재생 차단 대응 로직
+            const playPromise = audio.play();
+            if (playPromise !== undefined) {
+              playPromise.catch((playError) => {
+                console.warn("⚠️ 자동재생 차단됨, fallback 사용:", playError);
+                this.isSpeaking = false;
+                URL.revokeObjectURL(audioUrl);
+                this.fallbackToSpeechSynthesis(text);
+              });
+            }
+          } else {
+            console.error(`❌ Nova TTS API 실패: ${response.status}`);
+            this.isGeneratingTTS = false;
+            this.fallbackToSpeechSynthesis(text);
+          }
+        } catch (error) {
+          console.error("❌ Nova TTS 요청 실패:", error);
+          this.isGeneratingTTS = false;
+          this.fallbackToSpeechSynthesis(text);
+        }
       }
     }
 
-    browserTTS(text) {
-      const utterance = new SpeechSynthesisUtterance(this.enhanceKoreanText(text));
-      utterance.lang = 'ko-KR';
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
+    fallbackToSpeechSynthesis(text) {
+      console.log("⚠️ Fallback: 브라우저 TTS 사용 (Nova 실패)");
+      
+      // AudioContext 초기화 시도
+      this.initializeAudioContext();
       
       this.isSpeaking = true;
-      utterance.onend = () => this.isSpeaking = false;
-      speechSynthesis.speak(utterance);
+      
+      // 기존 utterance 정리
+      if (this.currentUtterance) {
+        try {
+          speechSynthesis.cancel();
+        } catch (error) {
+          console.warn("⚠️ speechSynthesis.cancel() 실패:", error);
+        }
+      }
+      
+      // Safari 호환성을 위한 지연
+      setTimeout(() => {
+        try {
+          const utterance = new SpeechSynthesisUtterance(text);
+          this.currentUtterance = utterance;
+          
+          // 시니어 친화적 설정 - Nova 실패시에도 최대한 자연스럽게
+          utterance.lang = "ko-KR";
+          utterance.rate = 0.7;   // 더 느린 속도로 명확하게
+          utterance.pitch = 1.0;  // 자연스러운 톤 유지
+          utterance.volume = 0.9;
+          
+          // 더 나은 음성 선택 (가능한 경우)
+          const voices = speechSynthesis.getVoices();
+          const koreanVoice = voices.find(voice => 
+            voice.lang.includes('ko') && (voice.name.includes('Google') || voice.name.includes('Samsung'))
+          ) || voices.find(voice => voice.lang.includes('ko'));
+          
+          if (koreanVoice) {
+            utterance.voice = koreanVoice;
+            console.log(`🎯 최적 한국어 음성 선택: ${koreanVoice.name}`);
+          }
+          
+          utterance.onend = () => {
+            this.isSpeaking = false;
+            this.currentUtterance = null;
+            console.log("✅ 브라우저 TTS 완료");
+          };
+          utterance.onerror = (event) => {
+            this.isSpeaking = false;
+            this.currentUtterance = null;
+            console.warn("⚠️ 브라우저 TTS 오류 (정상적 동작):", event);
+          };
+          
+          if ('speechSynthesis' in window) {
+            speechSynthesis.speak(utterance);
+          }
+        } catch (error) {
+          console.error("❌ Fallback TTS 전체 실패:", error);
+          this.isSpeaking = false;
+          this.currentUtterance = null;
+        }
+      }, 100); // 100ms 지연으로 Safari 호환성 향상
+    }
+
+    // 음성 중지 메서드
+    stopSpeaking() {
+      if ("speechSynthesis" in window) {
+        speechSynthesis.cancel();
+      }
+      if (this.currentUtterance) {
+        this.currentUtterance = null;
+      }
+      this.isSpeaking = false;
+      this.isGeneratingTTS = false;
     }
 
     enhanceKoreanText(text) {
@@ -364,6 +487,9 @@
         .replace(/\b고마워\b/g, '감사합니다')
         .replace(/\b괜찮아\b/g, '괜찮습니다');
     }    startListening() {
+      // Safari 자동재생 정책 대응: 사용자 상호작용시 AudioContext 활성화
+      this.initializeAudioContext();
+      
       if (this.recognition && !this.isListening) {
         this.isListening = true;
         this.recognition.start();
@@ -449,6 +575,7 @@
     start() { this.startListening(); }
     stop() { this.stopListening(); }
     say(text) { this.speak(text); }
+    stopSpeech() { this.stopSpeaking(); }
   }
 
   // 전역 설치 함수
