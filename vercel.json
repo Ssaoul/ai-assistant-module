@@ -1,4 +1,5 @@
 {
+  "buildCommand": "",
   "routes": [
     {
       "src": "/v1/assistant.js",
@@ -12,7 +13,7 @@
       }
     },
     {
-      "src": "/assistant.js",
+      "src": "/assistant.js", 
       "dest": "/src/standalone/ai-assistant-standalone.js",
       "headers": {
         "Content-Type": "application/javascript",
