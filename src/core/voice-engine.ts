@@ -1,7 +1,10 @@
 /**
  * VoiceEngine - TTS/STT 핵심 엔진
  * 기존 VoiceManager.tsx에서 추출한 자연스러운 Nova 음성 처리
+ * Whisper API 통합 지원
  */
+
+import { WhisperEngine, WhisperConfig } from './whisper-engine'
 
 export interface TTSOptions {
   voice?: 'nova' | 'alloy' | 'echo'
@@ -14,10 +17,13 @@ export interface VoiceEngineConfig {
   apiEndpoint?: string
   defaultVoice?: string
   fallbackEnabled?: boolean
+  useWhisper?: boolean
+  whisperConfig?: WhisperConfig
 }
 
 export class VoiceEngine {
   private recognitionRef: any = null
+  private whisperEngine: WhisperEngine | null = null
   private currentUtterance: SpeechSynthesisUtterance | null = null
   private isListening = false
   private isSpeaking = false
@@ -29,9 +35,15 @@ export class VoiceEngine {
       apiEndpoint: '/api/tts',
       defaultVoice: 'nova',
       fallbackEnabled: true,
+      useWhisper: false,
       ...config
     }
-    this.initializeSpeechRecognition()
+    
+    if (this.config.useWhisper && this.config.whisperConfig) {
+      this.whisperEngine = new WhisperEngine(this.config.whisperConfig)
+    } else {
+      this.initializeSpeechRecognition()
+    }
   }
 
   private initializeSpeechRecognition(): void {
@@ -138,17 +150,41 @@ export class VoiceEngine {
   }
 
   async startListening(): Promise<void> {
-    if (!this.recognitionRef || this.isListening) return
-    
+    if (this.isListening) return
+
     this.isListening = true
-    this.recognitionRef.start()
+
+    if (this.config.useWhisper && this.whisperEngine) {
+      try {
+        await this.whisperEngine.startRecording()
+      } catch (error) {
+        this.isListening = false
+        throw error
+      }
+    } else if (this.recognitionRef) {
+      this.recognitionRef.start()
+    }
   }
 
-  stopListening(): void {
-    if (this.recognitionRef && this.isListening) {
-      this.isListening = false
+  async stopListening(): Promise<string | null> {
+    if (!this.isListening) return null
+
+    this.isListening = false
+
+    if (this.config.useWhisper && this.whisperEngine) {
+      try {
+        const result = await this.whisperEngine.stopRecording()
+        return result.text
+      } catch (error) {
+        console.error('Whisper 전사 오류:', error)
+        return null
+      }
+    } else if (this.recognitionRef) {
       this.recognitionRef.stop()
+      return null // Web Speech API는 콜백으로 처리
     }
+
+    return null
   }
 
   stopSpeaking(): void {
@@ -162,10 +198,24 @@ export class VoiceEngine {
   }
 
   onTranscriptReceived(callback: (transcript: string) => void): void {
-    if (this.recognitionRef) {
+    if (this.config.useWhisper) {
+      // Whisper는 stopListening()에서 직접 텍스트 반환
+      this.transcriptCallback = callback
+    } else if (this.recognitionRef) {
       this.recognitionRef.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript
         callback(transcript)
+      }
+    }
+  }
+
+  private transcriptCallback?: (transcript: string) => void
+
+  async processWhisperResult(): Promise<void> {
+    if (this.config.useWhisper && this.transcriptCallback) {
+      const transcript = await this.stopListening()
+      if (transcript) {
+        this.transcriptCallback(transcript)
       }
     }
   }
@@ -182,7 +232,16 @@ export class VoiceEngine {
     return {
       isListening: this.isListening,
       isSpeaking: this.isSpeaking,
-      isGeneratingTTS: this.isGeneratingTTS
+      isGeneratingTTS: this.isGeneratingTTS,
+      usingWhisper: this.config.useWhisper || false
+    }
+  }
+
+  destroy(): void {
+    this.stopListening()
+    this.stopSpeaking()
+    if (this.whisperEngine) {
+      this.whisperEngine.destroy()
     }
   }
 }

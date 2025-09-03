@@ -38,13 +38,16 @@
         language: 'ko-KR',
         voiceModel: 'nova',
         apiKey: null,
-        openaiApiKey: null,  // AI 의도 분석용
+        openaiApiKey: null,  // AI 의도 분석용 + Whisper API용
         enableLogging: false,
         autoStart: true,
-        useAIIntent: true
+        useAIIntent: true,
+        useWhisper: false  // Whisper API 사용 여부
       }, config);
 
       this.recognition = null;
+      this.mediaRecorder = null;  // Whisper용 MediaRecorder
+      this.audioChunks = [];      // Whisper용 오디오 청크
       this.isListening = false;
       this.isSpeaking = false;
       this.isGeneratingTTS = false;
@@ -486,23 +489,133 @@
         .replace(/\b안녕\b/g, '안녕하세요')
         .replace(/\b고마워\b/g, '감사합니다')
         .replace(/\b괜찮아\b/g, '괜찮습니다');
-    }    startListening() {
+    }
+
+    async startListening() {
       // Safari 자동재생 정책 대응: 사용자 상호작용시 AudioContext 활성화
       this.initializeAudioContext();
       
-      if (this.recognition && !this.isListening) {
+      if (this.config.useWhisper && this.config.openaiApiKey) {
+        await this.startWhisperRecording();
+      } else if (this.recognition && !this.isListening) {
         this.isListening = true;
         this.recognition.start();
         this.showFeedback('🎤 음성 인식 시작', 'info');
       }
     }
 
-    stopListening() {
-      if (this.recognition && this.isListening) {
+    async stopListening() {
+      if (this.config.useWhisper && this.config.openaiApiKey) {
+        try {
+          await this.stopWhisperRecording();
+        } catch (error) {
+          this.log('Whisper 녹음 중지 실패:', error);
+        }
+      } else if (this.recognition && this.isListening) {
         this.isListening = false;
         this.recognition.stop();
         this.showFeedback('⏹️ 음성 인식 중지', 'info');
       }
+    }
+
+    // Whisper API 통합 메서드들
+    async startWhisperRecording() {
+      if (this.isListening) return;
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true
+          } 
+        });
+
+        this.mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        });
+
+        this.audioChunks = [];
+        this.isListening = true;
+
+        this.mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            this.audioChunks.push(event.data);
+          }
+        };
+
+        this.mediaRecorder.start();
+        this.showFeedback('🎤 Whisper 음성 인식 시작', 'info');
+
+      } catch (error) {
+        this.showFeedback('❌ 마이크 접근 실패', 'error');
+        throw error;
+      }
+    }
+
+    async stopWhisperRecording() {
+      return new Promise((resolve, reject) => {
+        if (!this.mediaRecorder || !this.isListening) {
+          reject(new Error('녹음이 시작되지 않았습니다'));
+          return;
+        }
+
+        this.mediaRecorder.onstop = async () => {
+          try {
+            const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+            const transcript = await this.transcribeWithWhisper(audioBlob);
+            
+            this.isListening = false;
+            this.showFeedback('✅ Whisper 인식 완료', 'success');
+            
+            // 기존 processCommand 로직 호출
+            this.processCommand(transcript);
+            resolve(transcript);
+          } catch (error) {
+            this.isListening = false;
+            this.showFeedback('❌ Whisper 인식 실패', 'error');
+            reject(error);
+          }
+        };
+
+        this.mediaRecorder.stop();
+        
+        // 스트림 정리
+        if (this.mediaRecorder.stream) {
+          this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+      });
+    }
+
+    async transcribeWithWhisper(audioBlob) {
+      if (!this.config.openaiApiKey) {
+        throw new Error('OpenAI API 키가 필요합니다');
+      }
+
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'audio.webm');
+      formData.append('model', 'whisper-1');
+      formData.append('language', this.config.language?.split('-')[0] || 'ko');
+      formData.append('response_format', 'verbose_json');
+      formData.append('temperature', '0');
+
+      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.openaiApiKey}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Whisper API 오류: ${response.status} ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      this.log('Whisper 결과:', result);
+      
+      return result.text || '';
     }
 
     focusSearchElement() {
@@ -630,18 +743,30 @@
     }
 
     async callOpenAI(transcript) {
-      const prompt = `한국어 음성 명령을 분석해서 의도를 파악해주세요.
+      const systemPrompt = `당신은 시니어 친화형 웹 접근성 AI 어시스턴트의 의도 분석 전문가입니다.
+사용자의 한국어 음성 명령을 정확히 분석하여 웹 인터페이스 제어 의도를 파악하세요.
 
-입력: "${transcript}"
+컨텍스트: 
+- 대상: 시니어 사용자 (65세+)
+- 환경: 웹 브라우저 (PC/태블릿)
+- 목적: 음성으로 웹사이트 조작 지원
 
-가능한 의도:
-- login: 로그인 관련
-- search: 검색 관련  
-- confirm: 확인/클릭
-- cancel: 취소/되돌리기
-- navigate: 이동/스크롤
+의도 카테고리:
+1. login: 로그인/회원가입/인증 관련
+2. search: 검색/찾기/조회 관련
+3. confirm: 확인/선택/클릭/실행 관련
+4. cancel: 취소/되돌리기/종료 관련
+5. navigate: 이동/스크롤/페이지 이동 관련
+6. input: 입력/작성/수정 관련
+7. read: 읽기/보기/듣기 관련
 
-JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상요소"}`;
+응답 형식 (JSON만):
+{"intent": "카테고리", "confidence": 0.0-1.0, "target": "구체적 대상", "action": "세부 동작"}`;
+
+      const userPrompt = `음성 명령: "${transcript}"
+
+현재 페이지 컨텍스트를 고려하여 가장 적절한 의도를 분석하세요.
+신뢰도는 음성 명령의 명확성과 의도의 확실성을 반영하여 설정하세요.`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -650,10 +775,14 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
           'Authorization': `Bearer ${this.config.openaiApiKey}`
         },
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 100,
-          temperature: 0.1
+          model: 'gpt-4o',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          max_tokens: 150,
+          temperature: 0.1,
+          response_format: { type: "json_object" }
         })
       });
 
@@ -665,7 +794,8 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
           intent: result.intent,
           confidence: result.confidence,
           target: result.target,
-          source: 'ai',
+          action: result.action,
+          source: 'gpt-4o',
           originalText: transcript
         };
       }
@@ -715,7 +845,7 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
     }
 
     async executeIntentAction(intent) {
-      this.showFeedback(`🎯 의도: ${intent.intent} (${Math.round(intent.confidence*100)}%)`, 'info');
+      this.showFeedback(`🎯 ${intent.source}: ${intent.intent} (${Math.round(intent.confidence*100)}%)`, 'info');
 
       switch(intent.intent) {
         case 'login':
@@ -725,6 +855,9 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
           
         case 'search':
           this.focusSearchElement();
+          if (intent.target) {
+            this.speak(`${intent.target}를 검색하겠습니다`);
+          }
           break;
           
         case 'confirm':
@@ -738,9 +871,45 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
         case 'navigate':
           this.handleNavigation(intent.originalText);
           break;
+
+        case 'input':
+          this.handleTextInput(intent);
+          break;
+
+        case 'read':
+          this.handleReadContent(intent);
+          break;
           
         default:
           this.speak('명령을 이해하지 못했습니다');
+      }
+    }
+
+    handleTextInput(intent) {
+      const inputElements = document.querySelectorAll('input[type="text"], input[type="email"], textarea');
+      if (inputElements.length > 0) {
+        const firstInput = inputElements[0];
+        firstInput.focus();
+        this.speak('입력 필드를 선택했습니다');
+      } else {
+        this.speak('입력할 수 있는 곳을 찾을 수 없습니다');
+      }
+    }
+
+    handleReadContent(intent) {
+      const readableElements = document.querySelectorAll('h1, h2, p, article, main');
+      if (readableElements.length > 0) {
+        const content = Array.from(readableElements)
+          .map(el => el.textContent?.trim())
+          .filter(text => text && text.length > 10)
+          .slice(0, 3)
+          .join('. ');
+        
+        if (content) {
+          this.speak(content);
+        } else {
+          this.speak('읽을 내용을 찾을 수 없습니다');
+        }
       }
     }
 

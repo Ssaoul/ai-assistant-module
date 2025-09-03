@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper 통합 테스트</title>
+    <style>
+        body { 
+            font-family: 'Malgun Gothic', sans-serif; 
+            padding: 2rem; 
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 2rem; 
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .control-panel {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            padding: 12px 24px;
+            margin: 8px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        
+        .config-section {
+            background: #e9ecef;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+        .status { 
+            padding: 1rem; 
+            border-radius: 6px; 
+            margin: 1rem 0;
+            font-weight: bold;
+        }
+        .status.whisper { background: #e3f2fd; color: #1976d2; }
+        .status.web-speech { background: #f3e5f5; color: #7b1fa2; }
+        .transcript {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Whisper vs Web Speech API 비교 테스트</h1>
+        
+        <div class="config-section">
+            <h3>⚙️ 설정</h3>
+            <label>
+                <input type="text" id="openaiKey" placeholder="OpenAI API 키 입력">
+                OpenAI API 키 (Whisper용)
+            </label>
+        </div>
+
+        <div class="control-panel">
+            <h3>🎮 음성 인식 제어</h3>
+            <button class="btn btn-primary" onclick="startWhisperTest()">🔊 Whisper 시작</button>
+            <button class="btn btn-danger" onclick="stopWhisperTest()">⏹️ Whisper 중지</button>
+            <button class="btn btn-success" onclick="startWebSpeechTest()">🌐 Web Speech 시작</button>
+            <button class="btn btn-danger" onclick="stopWebSpeechTest()">⏹️ Web Speech 중지</button>
+        </div>
+
+        <div id="status" class="status">
+            준비됨 - API 키를 입력하고 테스트를 시작하세요
+        </div>
+
+        <div id="transcripts">
+            <h3>📝 인식 결과 비교</h3>
+            <div id="whisper-result" class="transcript">
+                <strong>Whisper 결과:</strong> <span id="whisper-text">-</span>
+            </div>
+            <div id="webspeech-result" class="transcript">
+                <strong>Web Speech 결과:</strong> <span id="webspeech-text">-</span>
+            </div>
+        </div>        <div class="test-commands">
+            <h3>🗣️ 테스트 명령어</h3>
+            <div class="command-list">
+                <p><strong>로그인:</strong> "로그인해줘", "들어가기", "접속하기"</p>
+                <p><strong>검색:</strong> "AI 검색해줘", "인공지능 찾아줘"</p>
+                <p><strong>네비게이션:</strong> "다음 페이지", "위로 올라가", "아래로 내려가"</p>
+                <p><strong>확인:</strong> "확인", "선택", "클릭해줘"</p>
+                <p><strong>취소:</strong> "아니야", "취소", "되돌려줘"</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let whisperAssistant = null;
+        let webSpeechAssistant = null;
+
+        function startWhisperTest() {
+            const apiKey = document.getElementById('openaiKey').value;
+            if (!apiKey) {
+                alert('OpenAI API 키를 입력해주세요');
+                return;
+            }
+
+            if (typeof AIAssistant !== 'undefined') {
+                whisperAssistant = AIAssistant.init({
+                    openaiApiKey: apiKey,
+                    useWhisper: true,
+                    useAIIntent: true,
+                    autoStart: false,
+                    enableLogging: true
+                });
+                
+                whisperAssistant.startListening();
+                updateStatus('🔊 Whisper 음성 인식 활성화', 'whisper');
+                
+                // 결과 콜백 설정
+                whisperAssistant.onTranscriptReceived = (transcript) => {
+                    document.getElementById('whisper-text').textContent = transcript;
+                };
+            }
+        }
+
+        function stopWhisperTest() {
+            if (whisperAssistant) {
+                whisperAssistant.stopListening();
+                updateStatus('⏹️ Whisper 중지됨', 'whisper');
+            }
+        }
+
+        function startWebSpeechTest() {
+            if (typeof AIAssistant !== 'undefined') {
+                webSpeechAssistant = AIAssistant.init({
+                    useWhisper: false,
+                    useAIIntent: false,
+                    autoStart: false,
+                    enableLogging: true
+                });
+                
+                webSpeechAssistant.startListening();
+                updateStatus('🌐 Web Speech API 활성화', 'web-speech');
+                
+                // 결과 콜백 설정
+                webSpeechAssistant.onTranscriptReceived = (transcript) => {
+                    document.getElementById('webspeech-text').textContent = transcript;
+                };
+            }
+        }
+
+        function stopWebSpeechTest() {
+            if (webSpeechAssistant) {
+                webSpeechAssistant.stopListening();
+                updateStatus('⏹️ Web Speech 중지됨', 'web-speech');
+            }
+        }
+
+        function updateStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        // 페이지 로드시 AI Assistant 로드
+        window.addEventListener('load', () => {
+            if (typeof AIAssistant === 'undefined') {
+                const script = document.createElement('script');
+                script.src = '../src/standalone/ai-assistant-standalone.js';
+                script.onload = () => {
+                    updateStatus('✅ AI Assistant 로드됨 - 테스트 준비 완료', '');
+                };
+                document.head.appendChild(script);
+            }
+        });
+    </script>
+</body>
+</html>

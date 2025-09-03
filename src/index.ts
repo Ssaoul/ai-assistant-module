@@ -3,7 +3,8 @@
  */
 
 import { VoiceEngine, TTSOptions } from './core/voice-engine'
-import { DOMAnalyzer, ElementMap } from './core/dom-analyzer'
+import { WhisperEngine, WhisperConfig, TranscriptionResult } from './core/whisper-engine'
+import { DOMAnalyzer, ElementMap, InteractiveElement } from './core/dom-analyzer'
 import { CommandRouter, VoiceCommand, CommandResult } from './core/command-router'
 
 export interface AssistantConfig {
@@ -14,6 +15,8 @@ export interface AssistantConfig {
   enableLogging?: boolean
   customCommands?: VoiceCommand[]
   apiEndpoint?: string
+  useWhisper?: boolean
+  openaiApiKey?: string
 }
 
 export class AIAssistant {
@@ -27,7 +30,12 @@ export class AIAssistant {
     this.config = config
     this.voiceEngine = new VoiceEngine({
       apiEndpoint: config.apiEndpoint,
-      defaultVoice: config.voiceModel
+      defaultVoice: config.voiceModel,
+      useWhisper: config.useWhisper,
+      whisperConfig: config.openaiApiKey ? {
+        apiKey: config.openaiApiKey,
+        language: config.language?.split('-')[0] || 'ko'
+      } : undefined
     })
     this.domAnalyzer = new DOMAnalyzer()
     this.commandRouter = new CommandRouter(this.domAnalyzer, this.voiceEngine)
@@ -134,4 +142,5 @@ if (typeof window !== 'undefined') {
   window.AIAssistant = AIAssistant
 }
 
-export { VoiceCommand, CommandResult, ElementMap, InteractiveElement, TTSOptions }
+export type { VoiceCommand, CommandResult, ElementMap, InteractiveElement, TTSOptions, WhisperConfig, TranscriptionResult }
+export { WhisperEngine }
