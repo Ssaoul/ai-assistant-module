@@ -693,19 +693,55 @@
       return basicResult;
     }
 
-    async callOpenAI(transcript) {
-      const prompt = `한국어 음성 명령을 분석해서 의도를 파악해주세요.
+    // 화면의 클릭 가능한 요소들을 텍스트로 수집
+    getScreenElements() {
+      const elements = [];
+      const selectors = [
+        'button', 'a', 'input[type="submit"]', 'input[type="button"]',
+        '[role="button"]', '[onclick]', '.btn', '.button'
+      ];
+      
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(el => {
+          const text = (el.textContent || el.value || el.getAttribute('aria-label') || '').trim();
+          if (text && text.length > 0 && text.length < 50) {
+            elements.push(`버튼: "${text}"`);
+          }
+        });
+      });
+      
+      // 입력 필드도 수집
+      document.querySelectorAll('input[type="text"], input[type="search"], textarea').forEach(el => {
+        const placeholder = el.placeholder || el.getAttribute('aria-label') || '';
+        if (placeholder) {
+          elements.push(`입력창: "${placeholder}"`);
+        }
+      });
+      
+      return elements.slice(0, 20).join('\n'); // 최대 20개 요소
+    }
 
-입력: "${transcript}"
+    async callOpenAI(transcript) {
+      // 현재 화면의 모든 클릭 가능한 요소들 수집
+      const screenElements = this.getScreenElements();
+      
+      const prompt = `한국어 음성 명령을 분석하여 현재 화면에서 실행할 작업을 찾아주세요.
+
+음성 명령: "${transcript}"
+
+현재 화면의 요소들:
+${screenElements}
+
+작업: 음성 명령에 맞는 화면 요소를 찾고 실행할 의도를 파악하세요.
 
 가능한 의도:
-- login: 로그인 관련
-- search: 검색 관련  
-- confirm: 확인/클릭
-- cancel: 취소/되돌리기
-- navigate: 이동/스크롤
+- click: 특정 버튼/링크 클릭 (target에 정확한 텍스트 명시)
+- search: 검색창 포커스
+- navigate: 페이지 이동
+- scroll: 스크롤 동작
+- input: 텍스트 입력
 
-JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상요소"}`;
+JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "정확한버튼텍스트"}`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -716,7 +752,7 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
         body: JSON.stringify({
           model: 'gpt-4o',
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 100,
+          max_tokens: 200,
           temperature: 0.1
         })
       });
@@ -809,14 +845,41 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
       this.showFeedback(`🎯 의도: ${intent.intent} (${Math.round(intent.confidence*100)}%)`, 'info');
 
       switch(intent.intent) {
-        case 'login':
-          this.findAndClickByText(['로그인', 'login', '로그인하기']);
-          this.speak('로그인을 진행합니다');
+        case 'click':
+          // AI가 화면에서 찾은 정확한 타겟 클릭
+          if (intent.target) {
+            const success = this.findAndClickByText([intent.target]);
+            if (success) {
+              this.speak(`${intent.target}을 선택했습니다`);
+            } else {
+              this.speak('해당 버튼을 찾을 수 없습니다');
+            }
+          } else {
+            this.handleGenericClick(intent.originalText);
+          }
           break;
           
         case 'search':
           this.focusSearchElement();
           this.speak('검색을 시작합니다');
+          break;
+          
+        case 'navigate':
+          this.handleNavigation(intent.originalText);
+          break;
+          
+        case 'scroll':
+          this.handleScrollCommand(intent.originalText);
+          break;
+          
+        case 'input':
+          this.speak('텍스트 입력 모드입니다');
+          break;
+          
+        // 기존 호환성 유지
+        case 'login':
+          this.findAndClickByText(['로그인', 'login', '로그인하기']);
+          this.speak('로그인을 진행합니다');
           break;
           
         case 'confirm':
@@ -825,10 +888,6 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
           
         case 'cancel':
           this.handleCancellation();
-          break;
-          
-        case 'navigate':
-          this.handleNavigation(intent.originalText);
           break;
           
         case 'help':
@@ -1396,6 +1455,22 @@ JSON으로만 응답: {"intent": "의도", "confidence": 0.9, "target": "대상�
       this.log('Whisper 결과:', result);
       
       return result.text || '';
+    }
+
+    handleScrollCommand(transcript) {
+      if (transcript.includes('위로') || transcript.includes('올려')) {
+        window.scrollBy(0, -300);
+        this.speak('위로 스크롤합니다');
+      } else if (transcript.includes('아래로') || transcript.includes('내려')) {
+        window.scrollBy(0, 300);
+        this.speak('아래로 스크롤합니다');
+      } else if (transcript.includes('맨위') || transcript.includes('처음')) {
+        window.scrollTo(0, 0);
+        this.speak('맨 위로 이동합니다');
+      } else if (transcript.includes('맨아래') || transcript.includes('끝')) {
+        window.scrollTo(0, document.body.scrollHeight);
+        this.speak('맨 아래로 이동합니다');
+      }
     }
 
     // 공개 API
