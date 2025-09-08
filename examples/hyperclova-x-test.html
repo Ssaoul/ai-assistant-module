@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HyperCLOVA X 테스트 - AI 어시스턴트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #7f8c8d;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .api-setup {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .api-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 14px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        
+        .api-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .status-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .status-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .status-active { color: #27ae60; }
+        .status-inactive { color: #e74c3c; }
+        .status-processing { color: #f39c12; }
+        
+        .control-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+        
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+        }
+        
+        .btn-success {
+            background: linear-gradient(45deg, #27ae60, #229954);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(45deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(45deg, #f39c12, #e67e22);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .log-container {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .comparison-section {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .engine-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .engine-card.hyperclova {
+            border-left-color: #00c851;
+        }
+        
+        .engine-card.openai {
+            border-left-color: #ff4444;
+        }
+        
+        .test-commands {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e8f5e8;
+            border-radius: 8px;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .command-item {
+            margin: 8px 0;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        
+        .command-item:hover {
+            background: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 HyperCLOVA X 테스트</h1>
+        <p class="subtitle">시니어 친화형 AI 어시스턴트 - 한국 문화 특화 버전</p>
+        
+        <div class="api-setup">
+            <h3>🔑 API 설정</h3>
+            <p>✅ HyperCLOVA X API 키: 자동 설정됨</p>
+            <p>✅ OpenAI API 키: 폴백용 자동 설정됨</p>
+            <p>🚀 어시스턴트 자동 초기화 중...</p>
+            <p>⚠️ <strong>CORS 이슈</strong>: Chrome을 <code>--disable-web-security --user-data-dir=/tmp/chrome</code> 플래그로 실행해야 API 호출 가능</p>
+        </div>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <div class="status-label">HyperCLOVA X 상태</div>
+                <div id="hyperclovaStatus" class="status-value status-inactive">대기</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">음성 인식 상태</div>
+                <div id="speechStatus" class="status-value status-inactive">중지</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">AI 엔진</div>
+                <div id="aiEngineStatus" class="status-value status-inactive">미설정</div>
+            </div>
+            <div class="status-card">
+                <div class="status-label">응답 시간</div>
+                <div id="responseTime" class="status-value">0ms</div>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <button id="startBtn" onclick="startListening()" class="btn btn-success">🎤 음성 인식 시작</button>
+            <button id="stopBtn" onclick="stopListening()" class="btn btn-danger" disabled>⏹️ 인식 중지</button>
+            <button onclick="clearLogs()" class="btn btn-warning">🗑️ 로그 지우기</button>
+            <button onclick="testHyperCLOVA()" class="btn btn-primary">🧪 HyperCLOVA 테스트</button>
+            <button onclick="compareEngines()" class="btn btn-info">🆚 성능 비교</button>
+        </div>
+        
+        <div class="test-commands">
+            <h4>📝 테스트 명령어 (클릭해서 음성 시뮬레이션)</h4>
+            <div class="command-item" onclick="simulateVoice('로그인해주세요')">🔑 "로그인해주세요"</div>
+            <div class="command-item" onclick="simulateVoice('검색하고 싶어요')">🔍 "검색하고 싶어요"</div>
+            <div class="command-item" onclick="simulateVoice('메뉴 좀 열어줘')">📋 "메뉴 좀 열어줘"</div>
+            <div class="command-item" onclick="simulateVoice('위로 올려주세요')">⬆️ "위로 올려주세요"</div>
+            <div class="command-item" onclick="simulateVoice('그게 맞나요')">❓ "그게 맞나요" (의심 표현)</div>
+            <div class="command-item" onclick="simulateVoice('맥날 찾아줘')">🍔 "맥날 찾아줘" (브랜드명)</div>
+        </div>
+        
+        <div class="comparison-section">
+            <h3>⚡ 성능 비교 (HyperCLOVA X vs OpenAI)</h3>
+            <div class="comparison-grid">
+                <div class="engine-card hyperclova">
+                    <h4>🇰🇷 HyperCLOVA X</h4>
+                    <div>정확도: <span id="hyperclovaAccuracy">측정 중...</span></div>
+                    <div>평균 응답시간: <span id="hyperclovaSpeed">-</span></div>
+                    <div>문화적 이해도: <span id="hyperclovalCulture">-</span></div>
+                    <div>테스트 횟수: <span id="hyperclovaTests">0</span></div>
+                </div>
+                <div class="engine-card openai">
+                    <h4>🌐 OpenAI GPT-4o</h4>
+                    <div>정확도: <span id="openaiAccuracy">측정 중...</span></div>
+                    <div>평균 응답시간: <span id="openaiSpeed">-</span></div>
+                    <div>문화적 이해도: <span id="openaiCulture">-</span></div>
+                    <div>테스트 횟수: <span id="openaiTests">0</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container" id="logContainer">
+            <div>🚀 HyperCLOVA X 테스트 시작...</div>
+        </div>
+    </div>
+
+    <script src="http://localhost:8080/src/standalone/ai-assistant-standalone.js" onload="console.log('✅ ai-assistant-standalone.js 로드됨')" onerror="console.error('❌ ai-assistant-standalone.js 로드 실패')"></script>
+    <script>
+        // 스크립트 로드 확인 및 즉시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(async () => {
+                if (typeof AIAssistantStandalone !== 'undefined') {
+                    console.log('✅ 스크립트 로드 확인됨');
+                    await autoInitialize();
+                } else {
+                    console.error('❌ AIAssistantStandalone 클래스를 찾을 수 없음');
+                }
+            }, 100);
+        });
+        
+        async function autoInitialize() {
+            log('📱 HyperCLOVA X 테스트 페이지 로드됨');
+            log('🚀 자동 초기화 시작...');
+            await initializeAssistant();
+        }
+        let assistant = null;
+        let testResults = {
+            hyperclova: { tests: 0, totalTime: 0, successes: 0, culturalScores: [] },
+            openai: { tests: 0, totalTime: 0, successes: 0, culturalScores: [] }
+        };
+        
+        function log(message) {
+            const logContainer = document.getElementById('logContainer');
+            const now = new Date().toLocaleTimeString('ko-KR');
+            logContainer.innerHTML += `<div>[${now}] ${message}</div>`;
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '<div>🗑️ 로그 지워짐</div>';
+        }
+        
+        function updateStatus(elementId, value, className) {
+            const element = document.getElementById(elementId);
+            element.textContent = value;
+            element.className = `status-value ${className}`;
+        }
+        
+        async function initializeAssistant() {
+            // API 키는 환경변수나 사용자 입력에서 가져오기
+            const hyperclovaKey = prompt('HyperCLOVA X API 키를 입력하세요:') || 'YOUR_HYPERCLOVA_API_KEY';
+            const openaiKey = prompt('OpenAI API 키를 입력하세요 (선택사항):') || 'YOUR_OPENAI_API_KEY';
+            
+            log('🚀 AI 어시스턴트 초기화 중...');
+            console.log('AIAssistantStandalone 클래스:', typeof AIAssistantStandalone);
+            
+            assistant = new AIAssistantStandalone({
+                hyperclovaApiKey: hyperclovaKey, // v3 API 형식으로 수정 완료
+                openaiApiKey: openaiKey, // OpenAI 폴백 우선 사용
+                useAIIntent: true,
+                enableLogging: true,
+                autoStart: false  // 자동 시작 비활성화
+            });
+            
+            // 강제로 음성 인식 상태 초기화
+            if (assistant.isListening) {
+                assistant.stopListening();
+            }
+            
+            console.log('assistant 객체 생성됨:', assistant);
+            
+            try {
+                // initialize 메서드가 없으므로 생성 시점에서 이미 초기화됨
+                log('✅ 초기화 완료 - 음성 인식 수동 시작 가능');
+                updateStatus('hyperclovaStatus', '준비', 'status-active');
+                updateStatus('aiEngineStatus', 'HyperCLOVA X', 'status-active');
+                updateStatus('speechStatus', '대기', 'status-inactive');
+                
+                // 버튼 상태 초기화
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                
+                // 이벤트 리스너 설정
+                assistant.onCommandReceived = (command) => {
+                    log(`🎯 명령 인식: "${command.transcript}" → ${command.intent} (${(command.confidence * 100).toFixed(1)}%)`);
+                    
+                    // 성능 측정
+                    const engine = command.source === 'hyperclova' ? 'hyperclova' : 'openai';
+                    if (command.responseTime) {
+                        testResults[engine].tests++;
+                        testResults[engine].totalTime += command.responseTime;
+                        if (command.confidence > 0.8) testResults[engine].successes++;
+                        
+                        updateTestResults();
+                    }
+                };
+                
+            } catch (error) {
+                log(`❌ 초기화 실패: ${error.message}`);
+                console.error('초기화 오류:', error);
+                updateStatus('hyperclovaStatus', '오류', 'status-inactive');
+                assistant = null; // 실패 시 null로 설정
+            }
+            
+            console.log('initializeAssistant 완료, assistant:', assistant);
+        }
+        
+        function updateTestResults() {
+            // HyperCLOVA X 결과
+            const hcx = testResults.hyperclova;
+            document.getElementById('hyperclovaTests').textContent = hcx.tests;
+            document.getElementById('hyperclovaAccuracy').textContent = hcx.tests > 0 ? `${(hcx.successes/hcx.tests*100).toFixed(1)}%` : '-';
+            document.getElementById('hyperclovaSpeed').textContent = hcx.tests > 0 ? `${(hcx.totalTime/hcx.tests).toFixed(0)}ms` : '-';
+            
+            // OpenAI 결과
+            const oai = testResults.openai;
+            document.getElementById('openaiTests').textContent = oai.tests;
+            document.getElementById('openaiAccuracy').textContent = oai.tests > 0 ? `${(oai.successes/oai.tests*100).toFixed(1)}%` : '-';
+            document.getElementById('openaiSpeed').textContent = oai.tests > 0 ? `${(oai.totalTime/oai.tests).toFixed(0)}ms` : '-';
+        }
+        
+        async function startListening() {
+            console.log('startListening 호출됨, assistant 상태:', assistant);
+            if (!assistant) {
+                alert('먼저 어시스턴트를 초기화해주세요');
+                log('❌ assistant 객체가 null입니다');
+                return;
+            }
+            
+            try {
+                await assistant.startListening();
+                updateStatus('speechStatus', '인식 중', 'status-active');
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                log('🎤 음성 인식 시작됨');
+            } catch (error) {
+                log(`❌ 음성 인식 시작 실패: ${error.message}`);
+                updateStatus('speechStatus', '오류', 'status-inactive');
+            }
+        }
+        
+        function stopListening() {
+            if (assistant) {
+                assistant.stopListening();
+                updateStatus('speechStatus', '중지', 'status-inactive');
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('stopBtn').disabled = true;
+                log('⏹️ 음성 인식 중지됨');
+                
+                // 인식 중지 시 성능 통계 표시
+                displayPerformanceStats();
+            }
+        }
+        
+        function displayPerformanceStats() {
+            log('📊 성능 통계 표시:');
+            
+            // HyperCLOVA X 통계
+            const hcx = testResults.hyperclova;
+            if (hcx.tests > 0) {
+                const avgSpeed = (hcx.totalTime / hcx.tests).toFixed(0);
+                const accuracy = ((hcx.successes / hcx.tests) * 100).toFixed(1);
+                log(`  🟦 HyperCLOVA X: ${hcx.tests}회 테스트, 평균 ${avgSpeed}ms, 정확도 ${accuracy}%`);
+            } else {
+                log(`  🟦 HyperCLOVA X: 테스트 데이터 없음`);
+            }
+            
+            // OpenAI 통계
+            const oai = testResults.openai;
+            if (oai.tests > 0) {
+                const avgSpeed = (oai.totalTime / oai.tests).toFixed(0);
+                const accuracy = ((oai.successes / oai.tests) * 100).toFixed(1);
+                log(`  🟨 OpenAI: ${oai.tests}회 테스트, 평균 ${avgSpeed}ms, 정확도 ${accuracy}%`);
+            } else {
+                log(`  🟨 OpenAI: 테스트 데이터 없음`);
+            }
+            
+            // 승부 결과
+            if (hcx.tests > 0 && oai.tests > 0) {
+                const hcxAvgSpeed = hcx.totalTime / hcx.tests;
+                const oaiAvgSpeed = oai.totalTime / oai.tests;
+                const hcxAccuracy = (hcx.successes / hcx.tests) * 100;
+                const oaiAccuracy = (oai.successes / oai.tests) * 100;
+                
+                const speedWinner = hcxAvgSpeed < oaiAvgSpeed ? 'HyperCLOVA X' : 'OpenAI';
+                const accuracyWinner = hcxAccuracy > oaiAccuracy ? 'HyperCLOVA X' : 'OpenAI';
+                
+                log(`  🏃 속도 우승: ${speedWinner} (${Math.abs(hcxAvgSpeed - oaiAvgSpeed).toFixed(0)}ms 차이)`);
+                log(`  🎯 정확도 우승: ${accuracyWinner} (${Math.abs(hcxAccuracy - oaiAccuracy).toFixed(1)}% 차이)`);
+            }
+        }
+        
+        async function simulateVoice(command) {
+            if (!assistant) {
+                alert('먼저 어시스턴트를 초기화해주세요');
+                return;
+            }
+            
+            log(`🎭 음성 시뮬레이션: "${command}"`);
+            updateStatus('speechStatus', '분석 중', 'status-processing');
+            
+            const startTime = performance.now();
+            
+            try {
+                // 직접 의도 분석 호출
+                const result = assistant.config.hyperclovaApiKey ? 
+                    await assistant.callHyperCLOVAX(command) :
+                    await assistant.callOpenAI(command);
+                
+                const responseTime = performance.now() - startTime;
+                result.responseTime = responseTime;
+                
+                updateStatus('responseTime', `${responseTime.toFixed(0)}ms`, 'status-active');
+                log(`✅ AI 분석 완료: ${result.intent} (신뢰도: ${(result.confidence * 100).toFixed(1)}%) - ${result.source}`);
+                
+                // 실제 명령 실행
+                await assistant.executeIntentAction(result);
+                
+            } catch (error) {
+                log(`❌ 명령 처리 실패: ${error.message}`);
+            }
+            
+            updateStatus('speechStatus', assistant.isListening ? '인식 중' : '중지', 
+                        assistant.isListening ? 'status-active' : 'status-inactive');
+        }
+        
+        async function testHyperCLOVA() {
+            if (!assistant) {
+                alert('먼저 어시스턴트를 초기화해주세요');
+                return;
+            }
+            
+            log('🧪 HyperCLOVA X 연결 테스트 시작...');
+            
+            const testCommands = [
+                "안녕하세요",
+                "로그인해주세요", 
+                "검색하고 싶어요",
+                "그게 맞나요",
+                "맥날 찾아줘"
+            ];
+            
+            for (const cmd of testCommands) {
+                try {
+                    const startTime = performance.now();
+                    const result = await assistant.callHyperCLOVAX(cmd);
+                    const responseTime = performance.now() - startTime;
+                    
+                    log(`✅ "${cmd}" → ${result.intent} (${(result.confidence*100).toFixed(1)}%, ${responseTime.toFixed(0)}ms)`);
+                    
+                    testResults.hyperclova.tests++;
+                    testResults.hyperclova.totalTime += responseTime;
+                    if (result.confidence > 0.8) testResults.hyperclova.successes++;
+                    
+                } catch (error) {
+                    log(`❌ "${cmd}" 실패: ${error.message}`);
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            updateTestResults();
+            log('🎉 HyperCLOVA X 테스트 완료!');
+        }
+        
+        // 실제 음성인식 기반 성능 비교 함수
+        async function compareEngines() {
+            if (!assistant) {
+                alert('먼저 어시스턴트를 초기화해주세요');
+                return;
+            }
+            
+            log('🆚 실제 음성인식 기반 성능 비교 시작...');
+            log('🎤 음성 명령을 말해주세요. 두 모델이 동시에 처리합니다.');
+            
+            // 디버깅 정보
+            log(`📋 API 키 상태: HyperCLOVA X=${!!assistant.config.hyperclovaApiKey}, OpenAI=${!!assistant.config.openaiApiKey}`);
+            
+            // 음성 인식이 중지되어 있다면 시작
+            if (!assistant.isListening) {
+                log('🔄 음성 인식이 중지되어 있어 시작합니다...');
+                await startListening();
+            } else {
+                log('✅ 음성 인식이 이미 진행 중입니다');
+            }
+            
+            // 실제 음성 인식을 위해 사용자에게 말하도록 안내
+            updateStatus('speechStatus', '비교 대기 중', 'status-processing');
+            assistant.speak('음성 명령을 말해주세요. 두 AI 모델이 동시에 분석합니다.');
+            
+            // 원래의 processCommand를 백업하고 새로운 함수로 교체
+            const originalProcessCommand = assistant.processCommand.bind(assistant);
+            log('💾 원래 processCommand 백업 완료');
+            
+            // Arrow function으로 this 컨텍스트 유지
+            assistant.processCommand = async (transcript) => {
+                log(`🎯 음성 인식됨: "${transcript}"`);
+                log('📊 두 모델 동시 분석 중...');
+                
+                const results = { hyperclova: null, openai: null };
+                const startTime = performance.now();
+                
+                try {
+                    // 두 모델을 병렬로 실행
+                    const promises = [];
+                    
+                    if (assistant.config.hyperclovaApiKey) {
+                        log('🚀 HyperCLOVA X 분석 시작...');
+                        promises.push(
+                            assistant.callHyperCLOVAX(transcript).then(result => {
+                                result.responseTime = performance.now() - startTime;
+                                results.hyperclova = result;
+                                log(`🟦 HyperCLOVA X: ${result.intent} (${(result.confidence*100).toFixed(1)}%, ${result.responseTime.toFixed(0)}ms)`);
+                                
+                                // 성능 통계 수집
+                                testResults.hyperclova.tests++;
+                                testResults.hyperclova.totalTime += result.responseTime;
+                                if (result.confidence > 0.8) testResults.hyperclova.successes++;
+                                
+                            }).catch(error => {
+                                log(`❌ HyperCLOVA X 실패: ${error.message}`);
+                                console.error('HyperCLOVA X 오류:', error);
+                                results.hyperclova = { error: error.message };
+                            })
+                        );
+                    } else {
+                        log('⚠️ HyperCLOVA X API 키가 없습니다');
+                    }
+                    
+                    if (assistant.config.openaiApiKey) {
+                        log('🚀 OpenAI 분석 시작...');
+                        promises.push(
+                            assistant.callOpenAI(transcript).then(result => {
+                                result.responseTime = performance.now() - startTime;
+                                results.openai = result;
+                                log(`🟨 OpenAI: ${result.intent} (${(result.confidence*100).toFixed(1)}%, ${result.responseTime.toFixed(0)}ms)`);
+                                
+                                // 성능 통계 수집
+                                testResults.openai.tests++;
+                                testResults.openai.totalTime += result.responseTime;
+                                if (result.confidence > 0.8) testResults.openai.successes++;
+                                
+                            }).catch(error => {
+                                log(`❌ OpenAI 실패: ${error.message}`);
+                                console.error('OpenAI 오류:', error);
+                                results.openai = { error: error.message };
+                            })
+                        );
+                    } else {
+                        log('⚠️ OpenAI API 키가 없습니다');
+                    }
+                    
+                    // 두 모델의 결과를 기다림
+                    log(`⏳ ${promises.length}개 모델 분석 대기 중...`);
+                    await Promise.all(promises);
+                    log('✅ 모든 모델 분석 완료');
+                    
+                    // 실시간 통계 업데이트
+                    updateTestResults();
+                    
+                    // 결과 비교 및 출력
+                    displayComparisonResults(transcript, results);
+                    
+                    // 더 좋은 결과로 실제 명령 실행
+                    const betterResult = selectBetterResult(results);
+                    if (betterResult && betterResult.confidence > 0.6) {
+                        log(`🎯 최종 선택: ${betterResult.source} (실행)`);
+                        await assistant.executeIntentAction(betterResult);
+                    }
+                    
+                } catch (error) {
+                    log(`❌ 성능 비교 실패: ${error.message}`);
+                    console.error('성능 비교 오류:', error);
+                }
+                
+                // 다음 비교를 위해 대기
+                setTimeout(() => {
+                    if (assistant.isListening) {
+                        assistant.speak('다음 명령을 말해주세요');
+                    }
+                }, 2000);
+            };
+            
+            log('🔧 성능 비교 모드 활성화 완료 - 음성 명령 대기 중');
+            
+            // 5분 후 원래 함수로 복원
+            setTimeout(() => {
+                assistant.processCommand = originalProcessCommand;
+                log('🔄 성능 비교 모드 종료 - 일반 모드로 복원');
+                updateStatus('speechStatus', assistant.isListening ? '인식 중' : '중지', 
+                           assistant.isListening ? 'status-active' : 'status-inactive');
+            }, 300000);
+            
+        }
+        
+        // 비교 결과 표시 함수
+        function displayComparisonResults(transcript, results) {
+            log(`📊 "${transcript}" 분석 결과:`);
+            
+            if (results.hyperclova && !results.hyperclova.error) {
+                log(`  🟦 HyperCLOVA X: ${results.hyperclova.intent} (${(results.hyperclova.confidence*100).toFixed(1)}%, ${results.hyperclova.responseTime.toFixed(0)}ms)`);
+            }
+            
+            if (results.openai && !results.openai.error) {
+                log(`  🟨 OpenAI: ${results.openai.intent} (${(results.openai.confidence*100).toFixed(1)}%, ${results.openai.responseTime.toFixed(0)}ms)`);
+            }
+            
+            // 승부 결과 표시
+            const winner = selectBetterResult(results);
+            if (winner) {
+                const winnerName = winner.source === 'hyperclova-x-v3' ? '🏆 HyperCLOVA X' : 
+                                 winner.source === 'openai' ? '🏆 OpenAI' : '🤝 동등';
+                log(`  ${winnerName} 승리 (신뢰도 ${(winner.confidence*100).toFixed(1)}%)`);
+            }
+        }
+        
+        // 더 나은 결과 선택 함수
+        function selectBetterResult(results) {
+            const hcx = results.hyperclova && !results.hyperclova.error ? results.hyperclova : null;
+            const openai = results.openai && !results.openai.error ? results.openai : null;
+            
+            if (!hcx && !openai) return null;
+            if (!hcx) return openai;
+            if (!openai) return hcx;
+            
+            // 신뢰도 기반 선택 (한국어 특화는 HyperCLOVA X에 가점)
+            const hcxScore = hcx.confidence + (hcx.source === 'hyperclova-x-v3' ? 0.1 : 0);
+            const openaiScore = openai.confidence;
+            
+            return hcxScore >= openaiScore ? hcx : openai;
+        }
+        
+    </script>
+</body>
+</html>

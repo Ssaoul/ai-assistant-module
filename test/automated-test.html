@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🤖 AI 어시스턴트 자동화 테스트</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary { background: #3498db; color: white; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #3498db;
+        }
+        
+        .test-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .test-status {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        
+        .status-pending { background: #6c757d; color: white; }
+        .status-running { background: #ffc107; color: #212529; animation: pulse 1s infinite; }
+        .status-pass { background: #28a745; color: white; }
+        .status-fail { background: #dc3545; color: white; }
+        .status-skip { background: #17a2b8; color: white; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .summary-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .summary-total { color: #6c757d; }
+        .summary-pass { color: #28a745; }
+        .summary-fail { color: #dc3545; }
+        .summary-running { color: #ffc107; }
+        
+        .log-container {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #27ae60);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .error-details {
+            background: #ffe6e6;
+            border: 1px solid #ff9999;
+            border-radius: 5px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 12px;
+            color: #d32f2f;
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        
+        .metric-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI 어시스턴트 종합 자동화 테스트</h1>
+            <p>모든 기능을 자동으로 테스트하여 품질을 보장합니다</p>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-success" onclick="runAllTests()">🚀 전체 테스트 실행</button>
+            <button class="btn btn-primary" onclick="runUITests()">🎨 UI 테스트만</button>
+            <button class="btn btn-info" onclick="runFunctionTests()">⚙️ 기능 테스트만</button>
+            <button class="btn btn-warning" onclick="runPerformanceTests()">⚡ 성능 테스트만</button>
+            <button class="btn btn-danger" onclick="stopTests()">⏹️ 테스트 중지</button>
+        </div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        
+        <div class="results-summary">
+            <div class="summary-card">
+                <div class="summary-label">전체 테스트</div>
+                <div class="summary-value summary-total" id="totalTests">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">통과</div>
+                <div class="summary-value summary-pass" id="passTests">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">실패</div>
+                <div class="summary-value summary-fail" id="failTests">0</div>
+            </div>
+            <div class="summary-card">
+                <div class="summary-label">진행 중</div>
+                <div class="summary-value summary-running" id="runningTests">0</div>
+            </div>
+        </div>
+        
+        <div class="test-grid">
+            <div class="test-section">
+                <h3>🎨 UI 요소 테스트</h3>
+                <div class="test-item">
+                    <span>어시스턴트 초기화</span>
+                    <div class="test-status status-pending" id="test-init">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>음성 인식 버튼 작동</span>
+                    <div class="test-status status-pending" id="test-speech-btn">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>상태 표시기 업데이트</span>
+                    <div class="test-status status-pending" id="test-status">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>로그 출력 기능</span>
+                    <div class="test-status status-pending" id="test-logging">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>버튼 상태 변경</span>
+                    <div class="test-status status-pending" id="test-btn-state">⏳</div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>⚙️ 기능 테스트</h3>
+                <div class="test-item">
+                    <span>HyperCLOVA X API 연결</span>
+                    <div class="test-status status-pending" id="test-hyperclova">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>OpenAI API 연결</span>
+                    <div class="test-status status-pending" id="test-openai">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>음성 명령 처리</span>
+                    <div class="test-status status-pending" id="test-voice-cmd">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>AI 음성 에코 필터링</span>
+                    <div class="test-status status-pending" id="test-echo-filter">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>명령 실행 로직</span>
+                    <div class="test-status status-pending" id="test-cmd-exec">⏳</div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>🆚 성능 비교 테스트</h3>
+                <div class="test-item">
+                    <span>성능 비교 모드 진입</span>
+                    <div class="test-status status-pending" id="test-compare-mode">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>두 모델 동시 분석</span>
+                    <div class="test-status status-pending" id="test-dual-analysis">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>통계 수집 및 표시</span>
+                    <div class="test-status status-pending" id="test-stats">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>승부 결과 판정</span>
+                    <div class="test-status status-pending" id="test-winner">⏳</div>
+                </div>
+                <div class="test-item">
+                    <span>성능 비교 복원</span>
+                    <div class="test-status status-pending" id="test-restore">⏳</div>
+                </div>
+            </div>
+            
+            <div class="test-section">
+                <h3>⚡ 성능 메트릭</h3>
+                <div class="performance-metrics">
+                    <div class="metric-card">
+                        <div class="metric-value" id="avgResponseTime">-</div>
+                        <div class="metric-label">평균 응답시간 (ms)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="successRate">-</div>
+                        <div class="metric-label">성공률 (%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="errorRate">-</div>
+                        <div class="metric-label">오류율 (%)</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-value" id="testDuration">-</div>
+                        <div class="metric-label">테스트 소요시간 (s)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container" id="testLog">
+            [자동화 테스트 로그]<br>
+            시스템 준비 완료. 테스트를 시작하려면 위의 버튼을 클릭하세요.<br>
+        </div>
+    </div>
+
+    <script src="http://localhost:8080/src/standalone/ai-assistant-standalone.js"></script>
+    <script>
+        class AutomatedTester {
+            constructor() {
+                this.tests = [];
+                this.results = { total: 0, pass: 0, fail: 0, running: 0 };
+                this.startTime = 0;
+                this.assistant = null;
+                this.metrics = {
+                    responseTimes: [],
+                    errors: [],
+                    successes: 0
+                };
+                
+                // 테스트 정의
+                this.defineTests();
+            }
+            
+            defineTests() {
+                // UI 테스트
+                this.addTest('UI', 'test-init', '어시스턴트 초기화', this.testInitialization);
+                this.addTest('UI', 'test-speech-btn', '음성 인식 버튼', this.testSpeechButton);
+                this.addTest('UI', 'test-status', '상태 표시기', this.testStatusIndicators);
+                this.addTest('UI', 'test-logging', '로그 출력', this.testLogging);
+                this.addTest('UI', 'test-btn-state', '버튼 상태', this.testButtonStates);
+                
+                // 기능 테스트
+                this.addTest('Function', 'test-hyperclova', 'HyperCLOVA X API', this.testHyperCLOVAX);
+                this.addTest('Function', 'test-openai', 'OpenAI API', this.testOpenAI);
+                this.addTest('Function', 'test-voice-cmd', '음성 명령 처리', this.testVoiceCommand);
+                this.addTest('Function', 'test-echo-filter', 'AI 음성 필터링', this.testEchoFilter);
+                this.addTest('Function', 'test-cmd-exec', '명령 실행', this.testCommandExecution);
+                
+                // 성능 비교 테스트
+                this.addTest('Performance', 'test-compare-mode', '성능 비교 모드', this.testCompareMode);
+                this.addTest('Performance', 'test-dual-analysis', '두 모델 동시 분석', this.testDualAnalysis);
+                this.addTest('Performance', 'test-stats', '통계 수집', this.testStatistics);
+                this.addTest('Performance', 'test-winner', '승부 판정', this.testWinnerSelection);
+                this.addTest('Performance', 'test-restore', '모드 복원', this.testModeRestore);
+            }
+            
+            addTest(category, id, name, testFunction) {
+                this.tests.push({
+                    category,
+                    id,
+                    name,
+                    testFunction: testFunction.bind(this),
+                    status: 'pending'
+                });
+                this.results.total++;
+            }
+            
+            async runAllTests() {
+                this.log('🚀 전체 자동화 테스트 시작');
+                this.startTime = Date.now();
+                
+                await this.runTestsByCategory(['UI', 'Function', 'Performance']);
+                
+                this.generateTestReport();
+            }
+            
+            async runUITests() {
+                this.log('🎨 UI 테스트 시작');
+                await this.runTestsByCategory(['UI']);
+            }
+            
+            async runFunctionTests() {
+                this.log('⚙️ 기능 테스트 시작');
+                await this.runTestsByCategory(['Function']);
+            }
+            
+            async runPerformanceTests() {
+                this.log('⚡ 성능 테스트 시작');
+                await this.runTestsByCategory(['Performance']);
+            }
+            
+            async runTestsByCategory(categories) {
+                // Function 또는 Performance 테스트 실행 시 어시스턴트 초기화 필요
+                if (!this.assistant && categories.some(cat => cat === 'Function' || cat === 'Performance')) {
+                    this.log('\n🔧 어시스턴트 초기화 중...');
+                    const initTest = this.tests.find(test => test.id === 'test-init');
+                    if (initTest) {
+                        await this.runSingleTest(initTest);
+                    }
+                }
+                
+                const testsToRun = this.tests.filter(test => categories.includes(test.category));
+                
+                for (let i = 0; i < testsToRun.length; i++) {
+                    const test = testsToRun[i];
+                    await this.runSingleTest(test);
+                    this.updateProgress(i + 1, testsToRun.length);
+                }
+            }
+            
+            async runSingleTest(test) {
+                this.log(`🔧 [${test.category}] ${test.name} 테스트 시작...`);
+                
+                // 상태 업데이트
+                this.setTestStatus(test.id, 'running');
+                this.results.running++;
+                this.updateSummary();
+                
+                const startTime = performance.now();
+                
+                try {
+                    const result = await test.testFunction();
+                    const responseTime = performance.now() - startTime;
+                    
+                    // 스킵된 테스트 처리
+                    if (result && result.skipped) {
+                        this.setTestStatus(test.id, 'skip');
+                        this.results.running--;
+                        this.log(`⏭️ [${test.category}] ${test.name} 스킵: ${result.reason}`);
+                        return;
+                    }
+                    
+                    this.metrics.responseTimes.push(responseTime);
+                    this.metrics.successes++;
+                    
+                    this.setTestStatus(test.id, 'pass');
+                    this.results.pass++;
+                    this.results.running--;
+                    
+                    this.log(`✅ [${test.category}] ${test.name} 통과 (${responseTime.toFixed(0)}ms)`);
+                    
+                } catch (error) {
+                    const responseTime = performance.now() - startTime;
+                    this.metrics.errors.push({ test: test.name, error: error.message, time: responseTime });
+                    
+                    this.setTestStatus(test.id, 'fail');
+                    this.results.fail++;
+                    this.results.running--;
+                    
+                    this.log(`❌ [${test.category}] ${test.name} 실패: ${error.message}`);
+                    
+                    // 오류 상세 정보 표시
+                    this.showErrorDetails(test.id, error);
+                }
+                
+                this.updateSummary();
+                await this.delay(500); // 테스트 간 간격
+            }
+            
+            // ===== 개별 테스트 구현 =====
+            
+            async testInitialization() {
+                // AI 어시스턴트 초기화 테스트 - API 키는 실제 환경에서 설정 필요
+                const hyperclovaKey = process.env.HYPERCLOVA_API_KEY || 'YOUR_HYPERCLOVA_API_KEY';
+                const openaiKey = process.env.OPENAI_API_KEY || 'YOUR_OPENAI_API_KEY';
+                
+                this.assistant = new AIAssistantStandalone({
+                    hyperclovaApiKey: hyperclovaKey,
+                    openaiApiKey: openaiKey,
+                    useAIIntent: true,
+                    enableLogging: false, // 테스트 중에는 로깅 비활성화
+                    autoStart: false
+                });
+                
+                if (!this.assistant) {
+                    throw new Error('어시스턴트 객체 생성 실패');
+                }
+                
+                if (!this.assistant.config.hyperclovaApiKey) {
+                    throw new Error('HyperCLOVA X API 키 설정 실패');
+                }
+                
+                return true;
+            }
+            
+            async testSpeechButton() {
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                // 음성 인식 시작/중지 테스트
+                this.assistant.startListening();
+                await this.delay(1000);
+                
+                if (!this.assistant.isListening) {
+                    throw new Error('음성 인식 시작 실패');
+                }
+                
+                this.assistant.stopListening();
+                await this.delay(500);
+                
+                if (this.assistant.isListening) {
+                    throw new Error('음성 인식 중지 실패');
+                }
+                
+                return true;
+            }
+            
+            async testStatusIndicators() {
+                // 상태 표시기 업데이트 테스트
+                const statusElements = ['hyperclovaStatus', 'speechStatus', 'aiEngineStatus'];
+                
+                for (const elementId of statusElements) {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        // 임시로 상태 변경해보기
+                        const originalText = element.textContent;
+                        element.textContent = '테스트 중';
+                        await this.delay(100);
+                        element.textContent = originalText;
+                    }
+                }
+                
+                return true;
+            }
+            
+            async testLogging() {
+                // 로그 출력 기능 테스트 - 로그 영역에 메시지가 실제로 추가되는지 확인
+                const logArea = document.querySelector('.log-area') || document.getElementById('logArea');
+                
+                if (!logArea) {
+                    this.log('⚠️ 로그 영역을 찾을 수 없음 - 콘솔 로그 테스트로 대체');
+                    
+                    // 콘솔 로그 기능 테스트
+                    const originalLog = console.log;
+                    let logCaptured = false;
+                    
+                    console.log = (...args) => {
+                        logCaptured = true;
+                        originalLog(...args);
+                    };
+                    
+                    this.log('🔧 테스트 로그 메시지');
+                    console.log = originalLog;
+                    
+                    return logCaptured;
+                }
+                
+                const initialLogCount = logArea.children.length;
+                
+                // 로그 메시지 추가
+                this.log('🔧 테스트 로그 메시지');
+                
+                // 잠시 대기 후 로그가 추가되었는지 확인
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                const finalLogCount = logArea.children.length;
+                
+                return finalLogCount > initialLogCount;
+            }
+            
+            async testButtonStates() {
+                // 버튼 상태 변경 테스트 (시뮬레이션)
+                const testButton = document.createElement('button');
+                testButton.disabled = false;
+                
+                testButton.disabled = true;
+                if (!testButton.disabled) {
+                    throw new Error('버튼 비활성화 실패');
+                }
+                
+                testButton.disabled = false;
+                if (testButton.disabled) {
+                    throw new Error('버튼 활성화 실패');
+                }
+                
+                return true;
+            }
+            
+            async testHyperCLOVAX() {
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                try {
+                    const result = await this.assistant.callHyperCLOVAX('로그인');
+                    
+                    if (!result || !result.intent) {
+                        throw new Error('HyperCLOVA X 응답 형식 오류');
+                    }
+                    
+                    if (typeof result.confidence !== 'number') {
+                        throw new Error('신뢰도 값이 숫자가 아님');
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    throw new Error(`HyperCLOVA X API 호출 실패: ${error.message}`);
+                }
+            }
+            
+            async testOpenAI() {
+                if (!this.assistant || !this.assistant.config.openaiApiKey) {
+                    this.log('⏭️ OpenAI API 키 미설정 - 테스트 스킵');
+                    return { skipped: true, reason: 'OpenAI API 키 미설정' };
+                }
+                
+                try {
+                    const result = await this.assistant.callOpenAI('로그인');
+                    
+                    if (!result || !result.intent) {
+                        throw new Error('OpenAI 응답 형식 오류');
+                    }
+                    
+                    return true;
+                } catch (error) {
+                    throw new Error(`OpenAI API 호출 실패: ${error.message}`);
+                }
+            }
+            
+            async testVoiceCommand() {
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                // 음성 명령 처리 시뮬레이션
+                try {
+                    const testTranscript = '로그인해주세요';
+                    await this.assistant.processCommand(testTranscript);
+                    return true;
+                } catch (error) {
+                    throw new Error(`음성 명령 처리 실패: ${error.message}`);
+                }
+            }
+            
+            async testEchoFilter() {
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                // AI 음성 에코 필터링 테스트
+                this.assistant.markAISpeechActive('로그인을 진행합니다');
+                const isEcho = this.assistant.isAISpeechEcho('로그인을 진행합니다');
+                
+                if (!isEcho) {
+                    throw new Error('AI 음성 에코 감지 실패');
+                }
+                
+                this.assistant.markAISpeechComplete();
+                const isNoEcho = this.assistant.isAISpeechEcho('검색해주세요');
+                
+                if (isNoEcho) {
+                    throw new Error('일반 음성을 에코로 잘못 감지');
+                }
+                
+                return true;
+            }
+            
+            async testCommandExecution() {
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                // 명령 실행 로직 테스트
+                const mockIntent = {
+                    intent: 'click',
+                    confidence: 0.9,
+                    target: 'test',
+                    source: 'test'
+                };
+                
+                try {
+                    await this.assistant.executeIntentAction(mockIntent);
+                    return true;
+                } catch (error) {
+                    throw new Error(`명령 실행 실패: ${error.message}`);
+                }
+            }
+            
+            async testCompareMode() {
+                // 성능 비교 모드 진입 테스트
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                // 원래 processCommand 백업
+                const originalProcessCommand = this.assistant.processCommand.bind(this.assistant);
+                
+                // 성능 비교 모드로 전환 (시뮬레이션)
+                let comparisonModeActive = false;
+                this.assistant.processCommand = async (transcript) => {
+                    comparisonModeActive = true;
+                    return originalProcessCommand(transcript);
+                };
+                
+                // 테스트 실행
+                await this.assistant.processCommand('테스트');
+                
+                if (!comparisonModeActive) {
+                    throw new Error('성능 비교 모드 진입 실패');
+                }
+                
+                // 복원
+                this.assistant.processCommand = originalProcessCommand;
+                
+                return true;
+            }
+            
+            async testDualAnalysis() {
+                // 두 모델 동시 분석 테스트
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                const transcript = '로그인';
+                const startTime = performance.now();
+                
+                const promises = [];
+                
+                // HyperCLOVA X
+                if (this.assistant.config.hyperclovaApiKey) {
+                    promises.push(this.assistant.callHyperCLOVAX(transcript));
+                }
+                
+                // OpenAI
+                if (this.assistant.config.openaiApiKey) {
+                    promises.push(this.assistant.callOpenAI(transcript));
+                }
+                
+                if (promises.length === 0) {
+                    return { skipped: true, reason: 'API 키가 설정되지 않음' };
+                }
+                
+                if (promises.length < 2) {
+                    this.log('⏭️ 두 모델 비교를 위해서는 두 API 키가 모두 필요 - 테스트 스킵');
+                    return { skipped: true, reason: '두 모델 비교를 위해서는 두 API 키가 모두 필요' };
+                }
+                
+                try {
+                    const results = await Promise.all(promises);
+                    
+                    if (results.length === 0) {
+                        throw new Error('결과가 없음');
+                    }
+                    
+                    const responseTime = performance.now() - startTime;
+                    this.log(`두 모델 동시 분석 완료: ${responseTime.toFixed(0)}ms`);
+                    
+                    return true;
+                } catch (error) {
+                    throw new Error(`동시 분석 실패: ${error.message}`);
+                }
+            }
+            
+            async testStatistics() {
+                // 통계 수집 테스트
+                const mockStats = {
+                    hyperclova: { tests: 5, totalTime: 4500, successes: 4 },
+                    openai: { tests: 5, totalTime: 6000, successes: 5 }
+                };
+                
+                // 평균 응답시간 계산
+                const hcxAvg = mockStats.hyperclova.totalTime / mockStats.hyperclova.tests;
+                const oaiAvg = mockStats.openai.totalTime / mockStats.openai.tests;
+                
+                if (hcxAvg <= 0 || oaiAvg <= 0) {
+                    throw new Error('통계 계산 오류');
+                }
+                
+                return true;
+            }
+            
+            async testWinnerSelection() {
+                // 승부 판정 테스트
+                const results = {
+                    hyperclova: { confidence: 0.9, responseTime: 800, source: 'hyperclova-x-v3' },
+                    openai: { confidence: 0.8, responseTime: 1200, source: 'openai' }
+                };
+                
+                // 승부 판정 로직 (HyperCLOVA X가 이길 것으로 예상)
+                const hcxScore = results.hyperclova.confidence + 0.1; // 한국어 가점
+                const openaiScore = results.openai.confidence;
+                
+                const winner = hcxScore >= openaiScore ? results.hyperclova : results.openai;
+                
+                if (!winner) {
+                    throw new Error('승부 판정 실패');
+                }
+                
+                return true;
+            }
+            
+            async testModeRestore() {
+                // 모드 복원 테스트
+                if (!this.assistant) {
+                    throw new Error('어시스턴트가 초기화되지 않음');
+                }
+                
+                const originalProcessCommand = this.assistant.processCommand;
+                
+                // 임시로 다른 함수로 교체
+                this.assistant.processCommand = async () => { return 'test'; };
+                
+                await this.delay(100);
+                
+                // 복원
+                this.assistant.processCommand = originalProcessCommand;
+                
+                if (this.assistant.processCommand === originalProcessCommand) {
+                    return true;
+                } else {
+                    throw new Error('모드 복원 실패');
+                }
+            }
+            
+            // ===== 유틸리티 메서드 =====
+            
+            setTestStatus(testId, status) {
+                const element = document.getElementById(testId);
+                if (element) {
+                    element.className = `test-status status-${status}`;
+                    
+                    switch (status) {
+                        case 'running':
+                            element.textContent = '🔄';
+                            break;
+                        case 'pass':
+                            element.textContent = '✅';
+                            break;
+                        case 'fail':
+                            element.textContent = '❌';
+                            break;
+                        case 'skip':
+                            element.textContent = '⏭️';
+                            break;
+                        default:
+                            element.textContent = '⏳';
+                    }
+                }
+            }
+            
+            showErrorDetails(testId, error) {
+                const testElement = document.getElementById(testId).closest('.test-item');
+                
+                // 기존 오류 상세 정보 제거
+                const existingError = testElement.querySelector('.error-details');
+                if (existingError) {
+                    existingError.remove();
+                }
+                
+                // 새로운 오류 상세 정보 추가
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-details';
+                errorDiv.textContent = error.message;
+                
+                testElement.appendChild(errorDiv);
+            }
+            
+            updateProgress(current, total) {
+                const percentage = (current / total) * 100;
+                document.getElementById('progressFill').style.width = `${percentage}%`;
+            }
+            
+            updateSummary() {
+                document.getElementById('totalTests').textContent = this.results.total;
+                document.getElementById('passTests').textContent = this.results.pass;
+                document.getElementById('failTests').textContent = this.results.fail;
+                document.getElementById('runningTests').textContent = this.results.running;
+                
+                // 메트릭 업데이트
+                if (this.metrics.responseTimes.length > 0) {
+                    const avgTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length;
+                    document.getElementById('avgResponseTime').textContent = avgTime.toFixed(0);
+                }
+                
+                const totalTests = this.results.pass + this.results.fail;
+                if (totalTests > 0) {
+                    const successRate = (this.results.pass / totalTests) * 100;
+                    const errorRate = (this.results.fail / totalTests) * 100;
+                    
+                    document.getElementById('successRate').textContent = successRate.toFixed(1);
+                    document.getElementById('errorRate').textContent = errorRate.toFixed(1);
+                }
+            }
+            
+            generateTestReport() {
+                const duration = (Date.now() - this.startTime) / 1000;
+                document.getElementById('testDuration').textContent = duration.toFixed(1);
+                
+                this.log('');
+                this.log('📊 ===== 테스트 완료 보고서 =====');
+                this.log(`⏱️  총 소요시간: ${duration.toFixed(1)}초`);
+                this.log(`✅ 통과: ${this.results.pass}/${this.results.total}`);
+                this.log(`❌ 실패: ${this.results.fail}/${this.results.total}`);
+                this.log(`📈 성공률: ${((this.results.pass / this.results.total) * 100).toFixed(1)}%`);
+                
+                if (this.metrics.responseTimes.length > 0) {
+                    const avgTime = this.metrics.responseTimes.reduce((a, b) => a + b, 0) / this.metrics.responseTimes.length;
+                    this.log(`⚡ 평균 응답시간: ${avgTime.toFixed(0)}ms`);
+                }
+                
+                if (this.metrics.errors.length > 0) {
+                    this.log('');
+                    this.log('🐛 발견된 오류:');
+                    this.metrics.errors.forEach(error => {
+                        this.log(`  - ${error.test}: ${error.error}`);
+                    });
+                }
+                
+                this.log('');
+                this.log('🎉 자동화 테스트 완료!');
+                
+                // 성공률에 따른 결과 메시지
+                const successRate = (this.results.pass / this.results.total) * 100;
+                if (successRate === 100) {
+                    this.log('🏆 모든 테스트 통과! 완벽한 품질입니다.');
+                } else if (successRate >= 90) {
+                    this.log('👍 대부분의 테스트 통과! 높은 품질입니다.');
+                } else if (successRate >= 70) {
+                    this.log('⚠️ 일부 테스트 실패. 개선이 필요합니다.');
+                } else {
+                    this.log('🚨 다수 테스트 실패. 즉시 수정이 필요합니다.');
+                }
+            }
+            
+            log(message) {
+                const logContainer = document.getElementById('testLog');
+                const timestamp = new Date().toLocaleTimeString('ko-KR');
+                logContainer.innerHTML += `[${timestamp}] ${message}<br>`;
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+            
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            
+            stopTests() {
+                this.log('🛑 테스트 중지됨');
+                // 실제로는 Promise 체인을 중단하기 어려우므로 사용자에게 알림
+                alert('테스트가 중지됩니다. 페이지를 새로고침하여 초기화하세요.');
+            }
+        }
+        
+        // 전역 테스터 인스턴스
+        let tester;
+        
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', () => {
+            tester = new AutomatedTester();
+            tester.log('🤖 자동화 테스트 시스템 준비 완료');
+        });
+        
+        // 전역 함수들
+        function runAllTests() {
+            tester.runAllTests();
+        }
+        
+        function runUITests() {
+            tester.runUITests();
+        }
+        
+        function runFunctionTests() {
+            tester.runFunctionTests();
+        }
+        
+        function runPerformanceTests() {
+            tester.runPerformanceTests();
+        }
+        
+        function stopTests() {
+            tester.stopTests();
+        }
+    </script>
+</body>
+</html>

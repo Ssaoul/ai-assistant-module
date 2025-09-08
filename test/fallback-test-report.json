@@ -1,0 +1,65 @@
+{
+  "totalTests": 7,
+  "passedTests": 7,
+  "failedTests": 0,
+  "tests": [
+    {
+      "name": "파일 구조 검증",
+      "passed": true,
+      "details": "3개 파일 검증",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.822Z"
+    },
+    {
+      "name": "함수 구현 검증",
+      "passed": true,
+      "details": "2개 함수 검증",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.822Z"
+    },
+    {
+      "name": "Fast-First Fallback 로직",
+      "passed": true,
+      "details": "OpenAI → HyperCLOVA X 전략 구현됨",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.822Z"
+    },
+    {
+      "name": "한국 문화 맥락",
+      "passed": true,
+      "details": "맥날, 스벅, 카톡 등 축약어 처리",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.822Z"
+    },
+    {
+      "name": "HyperCLOVA X V3 API",
+      "passed": true,
+      "details": "V3 엔드포인트 및 HCX-007 모델 설정",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.823Z"
+    },
+    {
+      "name": "API 파라미터 최적화",
+      "passed": true,
+      "details": "JSON 응답 강제를 위한 파라미터 설정",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.823Z"
+    },
+    {
+      "name": "테스트 프레임워크",
+      "passed": true,
+      "details": "5개 핵심 테스트 시나리오 구현",
+      "timing": 0,
+      "timestamp": "2025-09-05T08:12:20.824Z"
+    }
+  ],
+  "generatedAt": "2025-09-05T08:12:20.824Z",
+  "strategy": "Fast-First Fallback",
+  "description": "OpenAI 빠른 처리 (2초) → 실패시 HyperCLOVA X 맥락 파악",
+  "summary": {
+    "successRate": 100,
+    "totalTests": 7,
+    "passedTests": 7,
+    "failedTests": 0
+  }
+}

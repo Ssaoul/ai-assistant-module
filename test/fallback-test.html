@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fast-First Fallback 시스템 테스트</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .log-area { background: #000; color: #00ff00; padding: 15px; border-radius: 5px; max-height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .test-buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin: 15px 0; }
+        .test-btn { padding: 12px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .test-btn:hover { background: #45a049; }
+        .status { padding: 5px 10px; border-radius: 3px; margin: 5px 0; }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        .config-section { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .config-item { margin: 10px 0; }
+        .config-item label { display: inline-block; width: 150px; font-weight: bold; }
+        .config-item input { padding: 5px; border: 1px solid #ddd; border-radius: 3px; width: 300px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Fast-First Fallback 시스템 테스트</h1>
+            <p>OpenAI 빠른 처리 → HyperCLOVA X 맥락 파악 전략 테스트</p>
+        </div>
+
+        <div class="config-section">
+            <h3>🔧 API 설정 (자동 설정됨)</h3>
+            <div class="config-item">
+                <label>OpenAI API Key:</label>
+                <input type="password" id="openaiKey" placeholder="Enter OpenAI API Key" />
+            </div>
+            <div class="config-item">
+                <label>HyperCLOVA API Key:</label>
+                <input type="password" id="hyperclovaKey" placeholder="Enter HyperCLOVA API Key" />
+            </div>
+            <button class="test-btn" onclick="initializeAssistant()">🎯 AI Assistant 초기화</button>
+            <div id="initStatus"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Fast-First Fallback 전략 테스트</h3>
+            <p><strong>전략:</strong> OpenAI 2초 타임아웃 → 실패시 HyperCLOVA X 맥락 분석</p>
+            
+            <div class="test-buttons">
+                <button class="test-btn" onclick="testOpenAIFastSuccess()">✅ OpenAI 빠른 성공 (1단계)</button>
+                <button class="test-btn" onclick="testOpenAITimeoutFallback()">⚠️ OpenAI 타임아웃 → HyperCLOVA</button>
+                <button class="test-btn" onclick="testKoreanCulturalContext()">🇰🇷 한국 문화 맥락 (맥날, 스벅)</button>
+                <button class="test-btn" onclick="testComplexKoreanExpression()">🤔 복잡한 한국어 표현</button>
+                <button class="test-btn" onclick="testPerformanceComparison()">⚡ 성능 비교 테스트</button>
+                <button class="test-btn" onclick="runFullFallbackTest()">🔄 전체 Fallback 시나리오</button>
+            </div>
+            
+            <div id="testResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 실시간 로그</h3>
+            <button onclick="clearLogs()">🗑️ 로그 지우기</button>
+            <div id="logArea" class="log-area"></div>
+        </div>
+    </div>
+
+    <script src="../src/standalone/ai-assistant-standalone.js"></script>
+    <script>
+        let assistant = null;
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#74c0fc';
+            logArea.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('logArea').innerHTML = '';
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            const successCount = testResults.filter(r => r.success).length;
+            const totalCount = testResults.length;
+            
+            resultsDiv.innerHTML = `
+                <div class="status ${totalCount > 0 ? (successCount === totalCount ? 'success' : 'info') : ''}">
+                    📊 테스트 결과: ${successCount}/${totalCount} 성공 (${totalCount > 0 ? Math.round(successCount/totalCount*100) : 0}%)
+                </div>
+                ${testResults.map(r => `
+                    <div class="status ${r.success ? 'success' : 'error'}">
+                        ${r.success ? '✅' : '❌'} ${r.name}: ${r.message} 
+                        ${r.timing ? `(${r.timing}ms)` : ''}
+                    </div>
+                `).join('')}
+            `;
+        }
+
+        async function initializeAssistant() {
+            try {
+                const openaiKey = document.getElementById('openaiKey').value;
+                const hyperclovaKey = document.getElementById('hyperclovaKey').value;
+
+                if (!openaiKey || !hyperclovaKey) {
+                    document.getElementById('initStatus').innerHTML = '<div class="status error">❌ API 키를 모두 입력해주세요</div>';
+                    return;
+                }
+
+                assistant = new AIAssistantStandalone({
+                    openaiApiKey: openaiKey,
+                    hyperclovaApiKey: hyperclovaKey,
+                    language: 'ko-KR'
+                });
+
+                document.getElementById('initStatus').innerHTML = '<div class="status success">✅ AI Assistant 초기화 완료</div>';
+                log('🎯 AI Assistant 초기화 완료 - Fast-First Fallback 전략 활성화', 'success');
+                
+            } catch (error) {
+                document.getElementById('initStatus').innerHTML = `<div class="status error">❌ 초기화 실패: ${error.message}</div>`;
+                log(`❌ 초기화 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function testOpenAIFastSuccess() {
+            if (!assistant) {
+                log('❌ AI Assistant가 초기화되지 않았습니다', 'error');
+                return;
+            }
+
+            log('🚀 테스트 1: OpenAI 빠른 성공 시나리오', 'info');
+            const startTime = Date.now();
+            
+            try {
+                const result = await assistant.processCommand("음악 재생해줘");
+                const endTime = Date.now();
+                const timing = endTime - startTime;
+                
+                if (result && result.source === 'openai') {
+                    testResults.push({
+                        name: 'OpenAI 빠른 성공',
+                        success: true,
+                        timing,
+                        message: `OpenAI 1단계 성공 (${result.confidence} 신뢰도)`
+                    });
+                    log(`✅ OpenAI 빠른 처리 성공: ${timing}ms`, 'success');
+                } else {
+                    testResults.push({
+                        name: 'OpenAI 빠른 성공',
+                        success: false,
+                        timing,
+                        message: 'OpenAI 대신 다른 소스 사용됨'
+                    });
+                    log(`❌ 예상과 다른 결과: ${JSON.stringify(result)}`, 'error');
+                }
+            } catch (error) {
+                testResults.push({
+                    name: 'OpenAI 빠른 성공',
+                    success: false,
+                    message: error.message
+                });
+                log(`❌ 테스트 실패: ${error.message}`, 'error');
+            }
+            
+            updateTestResults();
+        }
+
+        async function testKoreanCulturalContext() {
+            if (!assistant) {
+                log('❌ AI Assistant가 초기화되지 않았습니다', 'error');
+                return;
+            }
+
+            log('🇰🇷 테스트 3: 한국 문화 맥락 테스트', 'info');
+            const testCases = [
+                { input: "맥날 검색해줘", expected: "맥도날드" },
+                { input: "스벅 찾아줘", expected: "스타벅스" },
+                { input: "카톡 열어줘", expected: "카카오톡" }
+            ];
+
+            for (const testCase of testCases) {
+                const startTime = Date.now();
+                try {
+                    log(`🔍 테스트: "${testCase.input}"`);
+                    const result = await assistant.processCommand(testCase.input);
+                    const endTime = Date.now();
+                    const timing = endTime - startTime;
+
+                    const success = result && (
+                        result.target?.includes(testCase.expected) || 
+                        result.intent?.includes(testCase.expected) ||
+                        (result.source === 'hyperclova_cultural')
+                    );
+
+                    testResults.push({
+                        name: `한국 문화 맥락: ${testCase.input}`,
+                        success,
+                        timing,
+                        message: success ? `${testCase.expected} 정확히 인식` : `예상: ${testCase.expected}, 실제: ${result?.target}`
+                    });
+
+                    log(`${success ? '✅' : '❌'} "${testCase.input}" → ${result?.target} (${timing}ms)`, success ? 'success' : 'error');
+                } catch (error) {
+                    testResults.push({
+                        name: `한국 문화 맥락: ${testCase.input}`,
+                        success: false,
+                        message: error.message
+                    });
+                    log(`❌ "${testCase.input}" 실패: ${error.message}`, 'error');
+                }
+            }
+
+            updateTestResults();
+        }
+
+        async function testComplexKoreanExpression() {
+            if (!assistant) {
+                log('❌ AI Assistant가 초기화되지 않았습니다', 'error');
+                return;
+            }
+
+            log('🤔 테스트 4: 복잡한 한국어 표현', 'info');
+            const complexExpressions = [
+                "그거 있잖아, 배 고플 때 시키는 그거 말이야",
+                "아까 그 버튼 있었는데, 뭐였지?",
+                "요즘 날씨가 어떤지 좀 알아봐줘"
+            ];
+
+            for (const expression of complexExpressions) {
+                const startTime = Date.now();
+                try {
+                    log(`🔍 복잡한 표현: "${expression}"`);
+                    const result = await assistant.processCommand(expression);
+                    const endTime = Date.now();
+                    const timing = endTime - startTime;
+
+                    const success = result && (result.confidence >= 0.6 || result.source === 'hyperclova-context');
+
+                    testResults.push({
+                        name: `복잡한 한국어: ${expression.substring(0, 20)}...`,
+                        success,
+                        timing,
+                        message: `${result?.source} 소스, ${result?.confidence} 신뢰도`
+                    });
+
+                    log(`${success ? '✅' : '❌'} 복잡한 표현 처리 ${success ? '성공' : '실패'} (${timing}ms)`, success ? 'success' : 'error');
+                } catch (error) {
+                    testResults.push({
+                        name: `복잡한 한국어: ${expression.substring(0, 20)}...`,
+                        success: false,
+                        message: error.message
+                    });
+                    log(`❌ 복잡한 표현 실패: ${error.message}`, 'error');
+                }
+            }
+
+            updateTestResults();
+        }
+
+        async function testPerformanceComparison() {
+            if (!assistant) {
+                log('❌ AI Assistant가 초기화되지 않았습니다', 'error');
+                return;
+            }
+
+            log('⚡ 테스트 5: 성능 비교', 'info');
+            const testCommand = "음악 재생";
+            const trials = 3;
+            let openaiTimes = [];
+            let hyperclovaTimes = [];
+
+            // OpenAI 성능 측정
+            log('📊 OpenAI 성능 측정 중...', 'info');
+            for (let i = 0; i < trials; i++) {
+                const startTime = Date.now();
+                try {
+                    const result = await assistant.processCommand(testCommand);
+                    const endTime = Date.now();
+                    if (result?.source === 'openai') {
+                        openaiTimes.push(endTime - startTime);
+                        log(`OpenAI 시도 ${i + 1}: ${endTime - startTime}ms`);
+                    }
+                } catch (error) {
+                    log(`OpenAI 시도 ${i + 1} 실패: ${error.message}`, 'error');
+                }
+            }
+
+            const avgOpenAI = openaiTimes.length > 0 ? Math.round(openaiTimes.reduce((a, b) => a + b) / openaiTimes.length) : 0;
+            
+            testResults.push({
+                name: 'OpenAI 평균 성능',
+                success: avgOpenAI > 0 && avgOpenAI < 2000,
+                timing: avgOpenAI,
+                message: `평균 ${avgOpenAI}ms (${openaiTimes.length}/${trials} 성공)`
+            });
+
+            log(`📈 성능 비교 완료 - OpenAI 평균: ${avgOpenAI}ms`, avgOpenAI > 0 ? 'success' : 'error');
+            updateTestResults();
+        }
+
+        async function runFullFallbackTest() {
+            if (!assistant) {
+                log('❌ AI Assistant가 초기화되지 않았습니다', 'error');
+                return;
+            }
+
+            log('🔄 테스트 6: 전체 Fallback 시나리오', 'info');
+            
+            // 테스트 시나리오: OpenAI 빠름 → 실패 시 HyperCLOVA X 맥락 파악
+            const scenarios = [
+                { 
+                    name: "간단한 명령 (OpenAI 처리 예상)",
+                    command: "검색해줘",
+                    expectedSource: "openai",
+                    maxTime: 2000
+                },
+                {
+                    name: "한국 문화 맥락 (HyperCLOVA 처리 예상)",
+                    command: "맥날 주문하고 싶어",
+                    expectedPattern: "맥도날드",
+                    maxTime: 5000
+                },
+                {
+                    name: "복잡한 의도 (Fallback 처리)",
+                    command: "아까 그거 있잖아, 그 버튼 말이야",
+                    expectedFallback: true,
+                    maxTime: 6000
+                }
+            ];
+
+            for (const scenario of scenarios) {
+                log(`🎯 시나리오: ${scenario.name}`, 'info');
+                const startTime = Date.now();
+                
+                try {
+                    const result = await assistant.processCommand(scenario.command);
+                    const endTime = Date.now();
+                    const timing = endTime - startTime;
+
+                    let success = false;
+                    let message = '';
+
+                    if (scenario.expectedSource && result?.source === scenario.expectedSource) {
+                        success = timing <= scenario.maxTime;
+                        message = `${scenario.expectedSource} 예상대로 처리 (${timing}ms)`;
+                    } else if (scenario.expectedPattern && result?.target?.includes(scenario.expectedPattern)) {
+                        success = timing <= scenario.maxTime;
+                        message = `패턴 "${scenario.expectedPattern}" 정확 인식 (${timing}ms)`;
+                    } else if (scenario.expectedFallback && result?.source?.includes('hyperclova')) {
+                        success = timing <= scenario.maxTime;
+                        message = `HyperCLOVA X Fallback 성공 (${timing}ms)`;
+                    } else {
+                        message = `예상과 다른 결과: ${result?.source}, ${result?.target}`;
+                    }
+
+                    testResults.push({
+                        name: scenario.name,
+                        success,
+                        timing,
+                        message
+                    });
+
+                    log(`${success ? '✅' : '❌'} ${scenario.name}: ${message}`, success ? 'success' : 'error');
+
+                } catch (error) {
+                    testResults.push({
+                        name: scenario.name,
+                        success: false,
+                        message: error.message
+                    });
+                    log(`❌ ${scenario.name} 실패: ${error.message}`, 'error');
+                }
+            }
+
+            updateTestResults();
+            log('🏁 전체 Fallback 시나리오 테스트 완료', 'info');
+        }
+
+        // 페이지 로드 시 자동 초기화
+        window.addEventListener('load', () => {
+            log('🎉 Fast-First Fallback 테스트 페이지 로드 완료', 'success');
+            log('🔄 AI Assistant 자동 초기화 중...', 'info');
+            
+            // 0.5초 후 자동 초기화
+            setTimeout(() => {
+                initializeAssistant();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

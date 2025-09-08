@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏪 키오스크 음성 인식 테스트</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Malgun Gothic', Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* 키오스크 상단 헤더 */
+        .kiosk-header {
+            background: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        
+        .kiosk-header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .voice-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .mic-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #95a5a6;
+            transition: all 0.3s ease;
+        }
+        
+        .mic-indicator.listening {
+            background: #e74c3c;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        /* 메인 컨테이너 */
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        /* 키오스크 화면 */
+        .kiosk-screen {
+            flex: 2;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .screen-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+        
+        .screen-header h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .screen-header p {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        /* 메뉴 그리드 */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .menu-item {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .menu-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            border-color: #007bff;
+        }
+        
+        .menu-item.selected {
+            background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+            color: white;
+            border-color: #0056b3;
+        }
+        
+        .menu-item .icon {
+            font-size: 36px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .menu-item .name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .menu-item .price {
+            font-size: 14px;
+            color: #6c757d;
+        }
+        
+        .menu-item.selected .price {
+            color: #ffffff;
+        }
+        
+        /* 하단 버튼들 */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        .action-btn {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .action-btn.primary {
+            background: #28a745;
+            color: white;
+        }
+        
+        .action-btn.secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .action-btn.danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .action-btn.info {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-1px);
+            filter: brightness(1.1);
+        }
+        
+        /* 우측 패널 */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        /* 성능 모니터 */
+        .performance-monitor {
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .performance-monitor h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .performance-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        
+        .ai-strategy {
+            background: #e3f2fd;
+            padding: 8px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 12px;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        /* 로그 영역 */
+        .log-panel {
+            background: rgba(0,0,0,0.9);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .log-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .log-header h3 {
+            color: #00ff00;
+            font-size: 16px;
+            margin: 0;
+        }
+        
+        .log-controls {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .log-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #333;
+            color: white;
+        }
+        
+        .log-btn:hover {
+            background: #555;
+        }
+        
+        .log-content {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            line-height: 1.4;
+            padding: 10px;
+            border-radius: 5px;
+            height: 200px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .log-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .log-content::-webkit-scrollbar-track {
+            background: #333;
+        }
+        
+        .log-content::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 3px;
+        }
+        
+        .log-entry {
+            margin: 2px 0;
+        }
+        
+        .log-entry.success { color: #00ff00; }
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.warning { color: #ffd43b; }
+        .log-entry.info { color: #74c0fc; }
+        .log-entry.ai { color: #ff9500; }
+        .log-entry.performance { color: #51cf66; }
+        
+        /* 반응형 */
+        @media (max-width: 1200px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .right-panel {
+                flex-direction: row;
+            }
+            
+            .log-content {
+                height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 키오스크 헤더 -->
+    <div class="kiosk-header">
+        <h1>🏪 맛있는 카페 키오스크</h1>
+        <div class="voice-status">
+            <div class="mic-indicator" id="micIndicator"></div>
+            <span id="voiceStatusText">음성 인식 대기중...</span>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- 키오스크 메인 화면 -->
+        <div class="kiosk-screen">
+            <div class="screen-header">
+                <h2>메뉴를 선택해주세요</h2>
+                <p>음성으로 "아메리카노 주문", "라떼 2개", "맥날 검색" 등 자연스럽게 말해보세요</p>
+            </div>
+            
+            <div class="menu-grid" id="menuGrid">
+                <!-- 커피 메뉴 -->
+                <div class="menu-item" data-item="아메리카노">
+                    <span class="icon">☕</span>
+                    <div class="name">아메리카노</div>
+                    <div class="price">3,500원</div>
+                </div>
+                
+                <div class="menu-item" data-item="카페라떼">
+                    <span class="icon">🥛</span>
+                    <div class="name">카페라떼</div>
+                    <div class="price">4,000원</div>
+                </div>
+                
+                <div class="menu-item" data-item="카푸치노">
+                    <span class="icon">☕</span>
+                    <div class="name">카푸치노</div>
+                    <div class="price">4,500원</div>
+                </div>
+                
+                <div class="menu-item" data-item="바닐라라떼">
+                    <span class="icon">🍦</span>
+                    <div class="name">바닐라라떼</div>
+                    <div class="price">4,800원</div>
+                </div>
+                
+                <div class="menu-item" data-item="아이스티">
+                    <span class="icon">🧊</span>
+                    <div class="name">아이스티</div>
+                    <div class="price">3,000원</div>
+                </div>
+                
+                <div class="menu-item" data-item="핫초콜릿">
+                    <span class="icon">🍫</span>
+                    <div class="name">핫초콜릿</div>
+                    <div class="price">4,200원</div>
+                </div>
+                
+                <!-- 디저트 -->
+                <div class="menu-item" data-item="크로와상">
+                    <span class="icon">🥐</span>
+                    <div class="name">크로와상</div>
+                    <div class="price">2,800원</div>
+                </div>
+                
+                <div class="menu-item" data-item="치즈케이크">
+                    <span class="icon">🍰</span>
+                    <div class="name">치즈케이크</div>
+                    <div class="price">5,500원</div>
+                </div>
+                
+                <div class="menu-item" data-item="마카롱">
+                    <span class="icon">🧁</span>
+                    <div class="name">마카롱</div>
+                    <div class="price">1,800원</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn primary" onclick="processOrder()">🛒 주문하기</button>
+                <button class="action-btn secondary" onclick="clearSelection()">🗑️ 초기화</button>
+                <button class="action-btn info" onclick="showHelp()">❓ 도움말</button>
+                <button class="action-btn danger" onclick="cancelOrder()">❌ 취소</button>
+            </div>
+        </div>
+
+        <!-- 우측 패널 -->
+        <div class="right-panel">
+            <!-- 성능 모니터 -->
+            <div class="performance-monitor">
+                <h3>⚡ AI 성능 모니터</h3>
+                
+                <div class="performance-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="responseTime">0ms</div>
+                        <div class="stat-label">응답시간</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="confidence">0%</div>
+                        <div class="stat-label">인식정확도</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="successRate">0%</div>
+                        <div class="stat-label">성공률</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalCommands">0</div>
+                        <div class="stat-label">총 명령수</div>
+                    </div>
+                </div>
+                
+                <div class="ai-strategy" id="aiStrategy">
+                    Fast-First Fallback 대기중
+                </div>
+            </div>
+            
+            <!-- 로그 패널 -->
+            <div class="log-panel">
+                <div class="log-header">
+                    <h3>📊 실시간 로그</h3>
+                    <div class="log-controls">
+                        <button class="log-btn" onclick="clearLogs()">지우기</button>
+                        <button class="log-btn" onclick="exportLogs()">저장</button>
+                    </div>
+                </div>
+                <div class="log-content" id="logContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../src/standalone/ai-assistant-standalone.js"></script>
+    <script>
+        // 글로벌 변수
+        let assistant = null;
+        let performanceStats = {
+            totalCommands: 0,
+            successfulCommands: 0,
+            totalResponseTime: 0,
+            lastConfidence: 0
+        };
+        let selectedItems = [];
+
+        // 페이지 로드 시 자동 초기화
+        window.addEventListener('load', async () => {
+            await initializeKioskAssistant();
+            addLog('🎉 키오스크 음성 인식 시스템 시작', 'success');
+            addLog('💡 메뉴 이름을 자연스럽게 말해보세요', 'info');
+            
+            // 메뉴 아이템 클릭 이벤트 등록
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    toggleMenuItem(item.dataset.item);
+                });
+            });
+        });
+
+        async function initializeKioskAssistant() {
+            try {
+                // API 키를 환경변수나 사용자 입력으로 받도록 수정
+                const openaiApiKey = prompt('OpenAI API 키를 입력하세요:');
+                const hyperclovaApiKey = prompt('HyperCLOVA X API 키를 입력하세요:');
+                
+                if (!openaiApiKey || !hyperclovaApiKey) {
+                    throw new Error('API 키가 필요합니다');
+                }
+                
+                assistant = new AIAssistantStandalone({
+                    openaiApiKey: openaiApiKey,
+                    hyperclovaApiKey: hyperclovaApiKey,
+                    language: 'ko-KR'
+                });
+
+                // AI Assistant의 원본 processCommand 메소드를 저장
+                const originalProcessCommand = assistant.processCommand.bind(assistant);
+                
+                // 성능 측정을 위한 래퍼 함수
+                assistant.processCommand = async function(transcript) {
+                    const startTime = Date.now();
+                    updateVoiceStatus('처리중...', true);
+                    updateAIStrategy('🔄 Fast-First Fallback 실행중...');
+                    
+                    addLog(`🎤 음성 인식: "${transcript}"`, 'info');
+                    
+                    try {
+                        const result = await originalProcessCommand(transcript);
+                        const endTime = Date.now();
+                        const responseTime = endTime - startTime;
+                        
+                        // 성능 통계 업데이트
+                        performanceStats.totalCommands++;
+                        performanceStats.totalResponseTime += responseTime;
+                        
+                        if (result && result.confidence > 0.6) {
+                            performanceStats.successfulCommands++;
+                            performanceStats.lastConfidence = result.confidence;
+                            
+                            // 메뉴 아이템 처리
+                            await handleVoiceCommand(transcript, result);
+                            
+                            addLog(`✅ AI 처리 성공: ${result.source} (${responseTime}ms, ${Math.round(result.confidence * 100)}% 신뢰도)`, 'success');
+                            updateAIStrategy(`✅ ${result.source} 성공 (${responseTime}ms)`);
+                        } else {
+                            addLog(`⚠️ 낮은 신뢰도: ${result ? Math.round(result.confidence * 100) : 0}%`, 'warning');
+                            updateAIStrategy('⚠️ 신뢰도 부족');
+                        }
+                        
+                        updatePerformanceDisplay(responseTime, result ? result.confidence : 0);
+                        updateVoiceStatus('음성 인식 대기중...', false);
+                        
+                        return result;
+                    } catch (error) {
+                        const endTime = Date.now();
+                        const responseTime = endTime - startTime;
+                        
+                        addLog(`❌ AI 처리 실패: ${error.message}`, 'error');
+                        updatePerformanceDisplay(responseTime, 0);
+                        updateVoiceStatus('오류 발생', false);
+                        updateAIStrategy('❌ 처리 실패');
+                        
+                        throw error;
+                    }
+                };
+
+                addLog('🤖 AI Assistant 초기화 완료', 'success');
+                updateAIStrategy('✅ Fast-First Fallback 준비완료');
+                
+                // 자동으로 음성 인식 시작
+                setTimeout(() => {
+                    startVoiceRecognition();
+                }, 1000);
+                
+            } catch (error) {
+                addLog(`❌ 초기화 실패: ${error.message}`, 'error');
+            }
+        }
+
+        async function handleVoiceCommand(transcript, result) {
+            const lowerTranscript = transcript.toLowerCase();
+            
+            // 메뉴 아이템 매칭
+            const menuItems = {
+                '아메리카노': ['아메리카노', '아메', '커피'],
+                '카페라떼': ['라떼', '카페라떼', '밀크커피'],
+                '카푸치노': ['카푸치노', '카푸'],
+                '바닐라라떼': ['바닐라', '바닐라라떼'],
+                '아이스티': ['아이스티', '차', '티'],
+                '핫초콜릿': ['초콜릿', '핫초콜릿', '코코아'],
+                '크로와상': ['크로와상', '빵'],
+                '치즈케이크': ['케이크', '치즈케이크'],
+                '마카롱': ['마카롱', '쿠키']
+            };
+            
+            // 메뉴 매칭 시도
+            for (const [itemName, keywords] of Object.entries(menuItems)) {
+                if (keywords.some(keyword => lowerTranscript.includes(keyword))) {
+                    toggleMenuItem(itemName);
+                    addLog(`🍽️ 메뉴 선택: ${itemName}`, 'ai');
+                    break;
+                }
+            }
+            
+            // 특별 명령 처리
+            if (lowerTranscript.includes('주문') || lowerTranscript.includes('결제')) {
+                processOrder();
+            } else if (lowerTranscript.includes('취소') || lowerTranscript.includes('초기화')) {
+                clearSelection();
+            } else if (lowerTranscript.includes('도움') || lowerTranscript.includes('헬프')) {
+                showHelp();
+            }
+            
+            // 한국 문화 맥락 처리 (맥날, 스벅 등)
+            if (lowerTranscript.includes('맥날') || lowerTranscript.includes('맥도날드')) {
+                addLog('🍔 맥도날드 관련 요청 - 외부 검색 추천', 'ai');
+                updateAIStrategy('🇰🇷 한국 문화 맥락 인식');
+            } else if (lowerTranscript.includes('스벅') || lowerTranscript.includes('스타벅스')) {
+                addLog('☕ 스타벅스 관련 요청 - 경쟁업체입니다!', 'warning');
+                updateAIStrategy('🇰🇷 경쟁업체 언급 감지');
+            }
+        }
+
+        function startVoiceRecognition() {
+            if (assistant) {
+                assistant.startListening();
+                updateVoiceStatus('🎤 음성 인식 활성화 - 말씀해주세요', true);
+                addLog('🎤 음성 인식 시작', 'info');
+            }
+        }
+
+        function stopVoiceRecognition() {
+            if (assistant) {
+                assistant.stopListening();
+                updateVoiceStatus('음성 인식 중지됨', false);
+                addLog('🛑 음성 인식 중지', 'info');
+            }
+        }
+
+        function toggleMenuItem(itemName) {
+            const menuItem = document.querySelector(`[data-item="${itemName}"]`);
+            if (!menuItem) return;
+            
+            if (selectedItems.includes(itemName)) {
+                // 선택 해제
+                selectedItems = selectedItems.filter(item => item !== itemName);
+                menuItem.classList.remove('selected');
+                addLog(`➖ 메뉴 제거: ${itemName}`, 'info');
+            } else {
+                // 선택 추가
+                selectedItems.push(itemName);
+                menuItem.classList.add('selected');
+                addLog(`➕ 메뉴 추가: ${itemName}`, 'success');
+            }
+        }
+
+        function processOrder() {
+            if (selectedItems.length === 0) {
+                addLog('⚠️ 선택된 메뉴가 없습니다', 'warning');
+                return;
+            }
+            
+            addLog(`🛒 주문 처리: ${selectedItems.join(', ')}`, 'success');
+            addLog('💳 결제 화면으로 이동...', 'info');
+            
+            // 간단한 주문 완료 효과
+            setTimeout(() => {
+                selectedItems = [];
+                document.querySelectorAll('.menu-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                addLog('✅ 주문이 완료되었습니다!', 'success');
+            }, 2000);
+        }
+
+        function clearSelection() {
+            selectedItems = [];
+            document.querySelectorAll('.menu-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            addLog('🗑️ 선택 초기화 완료', 'info');
+        }
+
+        function showHelp() {
+            addLog('❓ 도움말: "아메리카노", "라떼 2개", "주문하기" 등으로 말씀해주세요', 'info');
+            addLog('💡 한국어 표현: "맥날", "스벅" 같은 축약어도 인식합니다', 'info');
+        }
+
+        function cancelOrder() {
+            clearSelection();
+            addLog('❌ 주문이 취소되었습니다', 'warning');
+        }
+
+        // 성능 표시 업데이트
+        function updatePerformanceDisplay(responseTime, confidence) {
+            document.getElementById('responseTime').textContent = `${responseTime}ms`;
+            document.getElementById('confidence').textContent = `${Math.round(confidence * 100)}%`;
+            
+            const successRate = performanceStats.totalCommands > 0 
+                ? Math.round((performanceStats.successfulCommands / performanceStats.totalCommands) * 100)
+                : 0;
+            document.getElementById('successRate').textContent = `${successRate}%`;
+            document.getElementById('totalCommands').textContent = performanceStats.totalCommands;
+        }
+
+        function updateVoiceStatus(text, isListening) {
+            const micIndicator = document.getElementById('micIndicator');
+            const statusText = document.getElementById('voiceStatusText');
+            
+            statusText.textContent = text;
+            
+            if (isListening) {
+                micIndicator.classList.add('listening');
+            } else {
+                micIndicator.classList.remove('listening');
+            }
+        }
+
+        function updateAIStrategy(text) {
+            document.getElementById('aiStrategy').textContent = text;
+        }
+
+        // 로그 관련 함수들
+        function addLog(message, type = 'info') {
+            const logContent = document.getElementById('logContent');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            logContent.appendChild(logEntry);
+            logContent.scrollTop = logContent.scrollHeight;
+            
+            // 로그가 너무 많아지면 오래된 것 제거
+            if (logContent.children.length > 100) {
+                logContent.removeChild(logContent.firstChild);
+            }
+        }
+
+        function clearLogs() {
+            document.getElementById('logContent').innerHTML = '';
+            addLog('📝 로그가 지워졌습니다', 'info');
+        }
+
+        function exportLogs() {
+            const logs = Array.from(document.querySelectorAll('.log-entry'))
+                .map(entry => entry.textContent)
+                .join('\n');
+            
+            const blob = new Blob([logs], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `kiosk-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            addLog('💾 로그가 저장되었습니다', 'success');
+        }
+
+        // 키보드 단축키
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        startVoiceRecognition();
+                    }
+                    break;
+                case 'Escape':
+                    stopVoiceRecognition();
+                    break;
+                case 'Enter':
+                    if (e.ctrlKey) {
+                        processOrder();
+                    }
+                    break;
+                case 'Delete':
+                    if (e.ctrlKey) {
+                        clearSelection();
+                    }
+                    break;
+            }
+        });
+    </script>
+</body>
+</html>
