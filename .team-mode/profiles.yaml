@@ -1,0 +1,21 @@
+# Team Mode 프로필 — 행동 경계(가드레일). GitHub 권한과 별개, CODEOWNERS와 이중 강제.
+# agetech-busan 파일럿에서 검증된 원형을 키트 공통으로 일반화.
+version: 0.2
+profiles:
+  maker:
+    label: "Maker (개발)"
+    allow_paths: ["frontend/**", "backend/**", "shared/**", "src/**", "ops/**", "docs/**"]
+    deny_actions: ["push:main", "commit:secrets"]
+    pr_required: true
+  planner:
+    label: "Planner (기획·디자인·QA·CS)"
+    allow_paths: ["docs/**", "**/design-system/**"]
+    deny_paths: ["backend/**", "shared/**"]   # 코드 레벨 수정 불가
+    deny_actions: ["push:main", "code:edit"]
+    pr_required: true
+  lead:
+    label: "Lead (PMO/PL)"
+    allow_paths: ["**"]
+    manages: [".team-mode/**", ".github/CODEOWNERS", "releases", "decisions", "autonomy-promotion"]
+    deny_actions: ["commit:secrets"]
+  # AI 에이전트는 위 프로필의 경계를 상속한다. 어떤 에이전트도 자기 경계를 스스로 넓힐 수 없다.

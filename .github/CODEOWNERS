@@ -1,0 +1,11 @@
+# CODEOWNERS — AI 산출물도 리뷰 필수. 자율등급과 이중 강제.
+# {{OWNER}} 를 실제 GitHub 핸들로 치환해 사용.
+
+# 거버넌스·자율등급·에이전트 정의는 Lead 승인
+/.team-mode/            @{{LEAD}}
+/.github/               @{{LEAD}}
+/.claude/agents/        @{{LEAD}}
+/foundry/               @{{LEAD}}
+
+# 코드·문서는 Maker 리뷰
+*                       @{{OWNER}}

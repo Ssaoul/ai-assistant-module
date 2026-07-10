@@ -1,0 +1,50 @@
+# ============================================================================
+# 동적 에이전트 레지스트리 — 이 저장소에 살아있는 에이전트 명단
+# ----------------------------------------------------------------------------
+# 이 명단은 "닫혀" 있지 않다. Foundry(create-agent.workflow.js)가 심의를 통과시킨
+# 새 에이전트를 여기에 append 한다. 6종 seed는 시작점일 뿐.
+#   status: seed       — 시스템과 함께 심어진 아키타입 (소급 등록)
+#           probation  — 방금 태어남, 수습 중 (자율등급 한 단계 강제 하향)
+#           active     — 승격 완료
+#           deprecated — 폐기 (90일 미사용 or 흡수)
+# ============================================================================
+version: 0.1
+
+# ---- 메타 층: 에이전트를 만드는 에이전트 ----
+meta:
+  - name: agent-architect
+    role: 새 에이전트 스펙 설계 (Foundry Draft 단계)
+    status: seed
+    tools: [Read, Grep, Glob]
+  # 심의는 create-agent.workflow.js 가 관점(perspectives.yaml)을 병렬 실행해 수행.
+  # advocate·skeptic·systems·domain·ops 는 별도 .md 없이 워크플로 내 프롬프트로 소환됨.
+
+# ---- seed 아키타입: 저장소 안에서 일하는 6종 ----
+agents:
+  - name: orchestrator
+    role: 저장소 내부에서 planner→designer→coder→verifier→qa 지휘·작업배분
+    status: seed
+  - name: planner
+    role: 상세 기획을 계속 추진 (요구사항·명세·수용기준)
+    status: seed
+  - name: designer
+    role: 기획을 화면으로, Figma에 반영 (Figma MCP)
+    status: seed
+  - name: coder
+    role: 명세/디자인을 코드로 구현
+    status: seed
+  - name: verifier
+    role: 코드와 검증을 반복 (테스트·타입·/verify)
+    status: seed
+  - name: qa
+    role: 버그 발견 + 사용성 평가
+    status: seed
+
+# ---- Foundry가 출산한 에이전트가 여기 쌓인다 ----
+# 예시(주석):
+# - name: data-migration-auditor
+#   role: 스키마 마이그레이션 안전성 감사
+#   status: probation
+#   born: 2026-07-11
+#   ledger: foundry/ledger/2026-07-11-data-migration-auditor.json
+#   gate_passed: 82/85
