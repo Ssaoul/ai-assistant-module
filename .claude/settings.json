@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "//": "Autopilot 무인 실행용 권한 allowlist + 바통 체크포인트 훅. deny가 allow보다 우선. npm publish는 deny(L1 릴리스 게이트).",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git branch:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git restore:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git show:*)",
+      "Bash(node:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run build:*)",
+      "Bash(npx:*)",
+      "Bash(python3:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(mkdir:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git merge:*)",
+      "Bash(git rebase:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Bash(gh:*)",
+      "Bash(npm publish:*)",
+      "Bash(npm version:*)",
+      "Bash(rm -rf:*)",
+      "Bash(rm -fr:*)",
+      "Bash(sudo:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)"
+    ]
+  },
+  "hooks": {
+    "PreCompact": [
+      { "matcher": "auto", "hooks": [ { "type": "command", "command": "/Users/sabdoly/Documents/GitHub/huray-mission-control/autopilot/hooks/checkpoint-baton.sh precompact" } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "/Users/sabdoly/Documents/GitHub/huray-mission-control/autopilot/hooks/checkpoint-baton.sh stop" } ] }
+    ],
+    "SessionEnd": [
+      { "hooks": [ { "type": "command", "command": "/Users/sabdoly/Documents/GitHub/huray-mission-control/autopilot/hooks/checkpoint-baton.sh sessionend" } ] }
+    ]
+  }
+}

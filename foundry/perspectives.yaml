@@ -1,0 +1,31 @@
+# Council 관점 정의 — 심의체 구성원
+# 관점은 추가/교체 가능하다 (심의체도 자란다). 각 관점은 채점 + blocking 반대 제기.
+# workflow 엔진(create-agent.workflow.js)이 이 목록을 읽어 병렬로 심의한다.
+version: 0.1
+default_gate: 75        # 합격점 (risk:high 저장소는 85로 상향)
+max_rounds: 3
+
+rubric_axes:            # CHARTER §3 과 일치
+  - { key: necessity, weight: 5, blocks_if: "기존 에이전트와 80%+ 중복" }
+  - { key: clarity,   weight: 4, blocks_if: "성공기준 측정 불가" }
+  - { key: safety,    weight: 5, blocks_if: "가드레일 위반 소지" }
+  - { key: fit,       weight: 3, blocks_if: "저장소 autonomy 등급 초과 요구" }
+  - { key: cost,      weight: 3, blocks_if: "가치 대비 상시비용 과다" }
+
+perspectives:
+  - key: advocate
+    stance: "이 에이전트가 푸는 문제의 가치를 가장 강하게 변론하되, 초안이 그 가치를 실제로 달성하는지 냉정히 확인한다."
+    focuses: [necessity, clarity]
+  - key: skeptic
+    stance: "레드팀. 기본 입장은 '반대'. 중복·범위확장·실패모드·악용가능성을 공격하고, 설득돼야만 물러선다. blocking 반대를 적극 제기."
+    focuses: [necessity, safety, cost]
+    default_position: oppose
+  - key: systems
+    stance: "키트 적합성·도구 권한 최소화·다른 에이전트와의 인터페이스·유지보수성을 본다. 불필요한 도구 권한은 차단."
+    focuses: [fit, clarity]
+  - key: domain
+    stance: "휴레이 도메인·규제 경계를 지킨다. 개인정보/실데이터 금지, SaMD 진단·처방 금지, 컨소시엄 규약 준수."
+    focuses: [safety, fit]
+  - key: ops
+    stance: "상시 운영비(토큰)·관측가능성·롤백 용이성·자율등급 정합성을 본다."
+    focuses: [cost, fit]
