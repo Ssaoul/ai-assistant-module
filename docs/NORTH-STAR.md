@@ -3,6 +3,8 @@
 > 이 문서는 goal-author·gap-finder·진화루프가 "전체 맥락·설계 관점"을 판단하는 **사람 소유 기준**이다.
 > autopilot은 읽기만 한다(자동 수정 금지). 갱신은 사람/ADR.
 >
+> 갱신: 2026-07-20 §③ 예외 반영([ADR 0001](adr/0001-event-api-exception-to-src-freeze.md), 사용자 승인).
+>
 > ⚠️ **초안 (2026-07-15, Claude 작성 · 사람 검토·소유 필요)**. 실제 파일(`package.json`·`README.md`·`docs/DEVELOPMENT_ROADMAP.md`·`src/`·`.claude/settings.json`·테스트)만 근거. `[사람 결정 필요]`는 사람이 채우거나 지운다.
 
 ## ① 전체 그림
@@ -19,9 +21,14 @@
 
 ## ③ 설계 원칙
 - **v1.0.0-stable 동결 — 버그 수정만**(`docs/DEVELOPMENT_ROADMAP.md`: 상태 동결 🔒).
-- **자율등급 L1 · npm release 사람 게이트**: `.claude/settings.json` deny에 push/merge/rebase·gh·npm publish·**npm install/ci**(공급망 주의)·rm-rf·sudo·curl/wget. 브랜치+커밋까지, main push·publish 금지.
+- **자율등급 L1 · npm release 사람 게이트**: `.claude/settings.json` deny에 push/merge/rebase·gh·npm publish·**npm install/ci**(공급망 주의)·rm-rf·sudo·curl/wget. 브랜치+커밋까지.
+  - *명확화(ADR 0001)*: **자율 루프는 main push 불가**(`.claude/settings.json` deny 유지).
+    **main push는 사람이 직접 수행 가능**하며, **`npm publish`는 계속 사람 게이트**로 남는다.
 - **★ 회귀 테스트 = "현재 동작 lock"**: 테스트 기대값은 *기대 사양*이 아니라 **현재 구현의 실제 출력**을 고정해 향후 회귀를 잡는 것(테스트 파일 명시). 예: `\w`가 ASCII만 매칭 → 한글 "확인확인"은 신뢰도 0.7·즉시실행 false를 그대로 고정.
-- **제품 src 불가침**: 테스트/툴링만, 제품 코드 무변경.
+- **제품 src 원칙적 불가침**: 테스트/툴링 우선, 제품 코드 무변경.
+  - *예외(ADR 0001)*: **문서화된 공개 API의 계약위반 버그 수정**은 허용하되 ADR로 기록한다.
+    (예: README가 안내하는 `.on()`이 부재해 `TypeError`가 나던 건 — 신규 기능이 아니라 계약위반 버그.)
+    **신규 기능 추가는 여전히 금지.** 어느 쪽이 정본인지(문서 vs 구현)는 사람이 판단한다.
 - **시니어 UX·존댓말 카피**: 사용자 대면 문구 존댓말("이전 상태로 되돌렸습니다"·"명령을 이해하지 못했습니다").
 
 ## ④ 좋음의 정의
