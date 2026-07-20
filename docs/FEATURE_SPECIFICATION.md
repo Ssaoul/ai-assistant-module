@@ -38,7 +38,7 @@
 
 ### 4. 멀티플랫폼 지원
 - **웹 브라우저**: JavaScript SDK로 임베딩
-- **모바일 앱**: React Native WebView 통합
+- **모바일 앱**: React Native WebView 통합 *(미착수 — ROADMAP §미착수)*
 - **키오스크**: 전체화면 브라우저 확장
 - **반응형**: 화면 크기별 최적화
 
@@ -76,7 +76,7 @@
 
 ### 통합 방식
 - **웹**: CDN 스크립트 + PostMessage API
-- **모바일**: WebView bridge
+- **모바일**: WebView bridge *(미착수)*
 - **키오스크**: Browser extension
 
 ## 📊 성능 요구사항
@@ -89,7 +89,7 @@
 
 ### 호환성
 - **브라우저**: Chrome 90+, Safari 14+, Edge 90+
-- **모바일**: iOS 14+, Android 8+
+- **모바일**: iOS 14+, Android 8+ *(미착수 — 현재 미지원)*
 - **키오스크**: Chrome Kiosk 모드
 
 ## 🚀 배포 전략

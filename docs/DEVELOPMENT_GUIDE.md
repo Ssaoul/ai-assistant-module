@@ -26,11 +26,11 @@ AI Assistant Module
 │   └── CommandRouter    # 음성 명령 라우팅
 ├── Integration Layer    # 플랫폼별 어댑터
 │   ├── WebAdapter       # 웹사이트 통합
-│   ├── MobileAdapter    # 모바일앱 통합
-│   └── KioskAdapter     # 키오스크 통합
+│   ├── MobileAdapter    # 모바일앱 통합 (미구현 — ROADMAP §미착수)
+│   └── KioskAdapter     # 키오스크 통합 (미구현 — ROADMAP §미착수)
 └── SDK Interface        # 개발자 API
     ├── JavaScript SDK   # 웹 개발자용
-    ├── React Native SDK # 모바일 개발자용
+    ├── React Native SDK # 모바일 개발자용 (미구현 — ROADMAP §미착수)
     └── Configuration    # 설정 관리
 ```
 
@@ -140,46 +140,14 @@ AIAssistant.init({
   ]
 })
 </script>
-```### 모바일 앱 통합 (React Native)
+```### 플랫폼 통합 (모바일·키오스크) — 미지원
 
-> ⚠️ **미지원 — 계획 단계 (2026-07-20 확인).** 아래 `AIAssistantModule`(정적 API·`handleMessage`)은
-> 현재 `src/`에 구현돼 있지 않다. 이 패키지의 `peerDependencies`는 `react`/`react-dom`(웹)이며
-> RN·WebView 연동 코드는 없다. 실제 지원 여부는 **미결정** — 결정 전까지 이 예제를 따라 하지 말 것.
-> (웹 사용법은 README 및 위 절 참조: `const assistant = new AIAssistant({...}); await assistant.initialize()`)
-```typescript
-import { AIAssistantModule } from '@ai-assistant/module'
-
-export default function App() {
-  useEffect(() => {
-    AIAssistantModule.initialize({
-      apiKey: 'your-api-key',
-      webViewRef: webViewRef.current,
-      permissions: ['microphone', 'speech']
-    })
-  }, [])
-
-  return (
-    <WebView 
-      ref={webViewRef}
-      source={{ uri: 'https://your-app.com' }}
-      onMessage={AIAssistantModule.handleMessage}
-    />
-  )
-}
-```
-
-### 키오스크 통합 (Browser Extension)
-```json
-// manifest.json
-{
-  "name": "AI Assistant Kiosk",
-  "permissions": ["activeTab", "storage", "microphone"],
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["ai-assistant-kiosk.js"]
-  }]
-}
-```
+> **현재 이 패키지는 웹 전용이다.** React Native / 키오스크(Browser Extension) 통합은
+> **구현돼 있지 않다** — `MobileAdapter`·`KioskAdapter`·`AIAssistantModule`·`handleMessage` 모두 `src/`에 없다.
+> 과거 이 자리에 있던 예제는 미구현 API를 안내해 오도의 소지가 있어 제거하고,
+> 계획은 [`DEVELOPMENT_ROADMAP.md` §미착수 — 플랫폼 확장](DEVELOPMENT_ROADMAP.md#-미착수--플랫폼-확장-계획만-구현-없음)으로 이관했다(2026-07-20).
+>
+> 웹 사용법은 위 절과 `README.md`를 참조: `const assistant = new AIAssistant({...}); await assistant.initialize()`
 
 ## 📡 API 명세
 

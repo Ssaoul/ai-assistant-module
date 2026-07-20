@@ -259,3 +259,32 @@ git checkout feature/v3.0-multimodal
 | v3.0 | 8주 | +70% | +200% | 블루오션 |
 
 **결론**: 점진적 업그레이드로 위험 최소화하면서 혁신 달성
+
+---
+
+## 🧭 미착수 — 플랫폼 확장 (계획만, 구현 없음)
+
+> 2026-07-20 이관. 아래 항목은 과거 `README.md`·`INSTALL.md`·`DEVELOPMENT_GUIDE.md`·
+> `FEATURE_SPECIFICATION.md`에 **구현된 기능처럼 서술**돼 있었으나, 실측 결과 `src/`에 코드가
+> 전혀 없어(각 심볼 0건) 사용자를 오도하고 있었다. 의도를 보존하되 오도를 끊기 위해 여기로 옮긴다.
+> **착수 전까지 다른 문서에서 "지원한다"고 쓰지 않는다.**
+
+### 현재 실제 지원 범위
+- **웹 전용.** `peerDependencies`: `react` / `react-dom`. `src/`는 웹 코어 7개 파일
+  (`command-router` · `dom-analyzer` · `fast-response` · `korean-cancellation` ·
+  `korean-speech-optimizer` · `visual-feedback` · `voice-engine`) + `index.ts`.
+
+### 미착수 항목
+
+| 항목 | 과거 문서의 주장 | 실측 |
+|---|---|---|
+| React Native SDK | `AIAssistantModule.initialize()` · `handleMessage` (WebView 연동) | `src` 0건. RN·WebView 코드 없음. `peerDeps`에 RN 없음 |
+| 키오스크 (Browser Extension) | `manifest.json` + `ai-assistant-kiosk.js` content script | `ai-assistant-kiosk.js` 파일 부재 |
+| 어댑터 계층 | `MobileAdapter` · `KioskAdapter` · `WebAdapter` | 세 심볼 모두 `src` 0건 |
+| 모바일 플랫폼 | "iOS 14+, Android 8+" | 지원 근거 없음 |
+
+### 착수 조건
+- v1.0.0-stable **동결 정책**(위 §현재 안정 버전, 버그 수정만) 아래에서는 착수하지 않는다.
+- 착수 시: 어댑터 인터페이스 설계 → RN peer 추가 → WebView 브리지 → 각 플랫폼 E2E.
+  플랫폼별 권한(마이크)·음성 API 차이가 핵심 난점.
+- 착수 결정 시 이 절을 v1.1/v2.0 등 실제 버전 절로 승격하고, 그때 각 문서에 "지원" 표기를 되살린다.
