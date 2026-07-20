@@ -142,11 +142,11 @@ AIAssistant.init({
 </script>
 ```### 모바일 앱 통합 (React Native)
 ```typescript
-import { AIAssistantModule } from '@ai-assistant/react-native'
+import { AIAssistant } from '@ai-assistant/module'
 
 export default function App() {
   useEffect(() => {
-    AIAssistantModule.initialize({
+    AIAssistant.initialize({
       apiKey: 'your-api-key',
       webViewRef: webViewRef.current,
       permissions: ['microphone', 'speech']
@@ -157,7 +157,7 @@ export default function App() {
     <WebView 
       ref={webViewRef}
       source={{ uri: 'https://your-app.com' }}
-      onMessage={AIAssistantModule.handleMessage}
+      onMessage={AIAssistant.handleMessage}
     />
   )
 }
