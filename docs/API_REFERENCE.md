@@ -8,8 +8,8 @@
 <script src="https://cdn.ai-assistant.com/v1/assistant.js"></script>
 
 // NPM 방식
-npm install @ai-assistant/web-sdk
-import { AIAssistant } from '@ai-assistant/web-sdk'
+npm install @ai-assistant/module
+import { AIAssistant } from '@ai-assistant/module'
 ```
 
 ### 초기화

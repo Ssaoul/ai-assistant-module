@@ -141,8 +141,13 @@ AIAssistant.init({
 })
 </script>
 ```### 모바일 앱 통합 (React Native)
+
+> ⚠️ **미지원 — 계획 단계 (2026-07-20 확인).** 아래 `AIAssistantModule`(정적 API·`handleMessage`)은
+> 현재 `src/`에 구현돼 있지 않다. 이 패키지의 `peerDependencies`는 `react`/`react-dom`(웹)이며
+> RN·WebView 연동 코드는 없다. 실제 지원 여부는 **미결정** — 결정 전까지 이 예제를 따라 하지 말 것.
+> (웹 사용법은 README 및 위 절 참조: `const assistant = new AIAssistant({...}); await assistant.initialize()`)
 ```typescript
-import { AIAssistantModule } from '@ai-assistant/react-native'
+import { AIAssistantModule } from '@ai-assistant/module'
 
 export default function App() {
   useEffect(() => {
