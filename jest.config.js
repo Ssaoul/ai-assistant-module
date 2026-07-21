@@ -23,7 +23,7 @@ module.exports = {
         tsconfig: {
           target: 'ES2019',
           module: 'commonjs',
-          lib: ['ES2019', 'DOM'],
+          lib: ['ES2019', 'DOM', 'DOM.Iterable'],
           moduleResolution: 'node',
           esModuleInterop: true,
           skipLibCheck: true,
